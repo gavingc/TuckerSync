@@ -1,0 +1,7 @@
+{
+    "products":[
+        {"id":1,"name":"Apple"},
+        {"id":2,"name":"Pear"},
+        {"id":3,"name":"Orange"}
+    ]
+}
