@@ -167,6 +167,11 @@ Message Body: JSON object containing error and objects.
 Account Requests
 ----------------
 
+**Summary** - Allow user to manage their account on the server.
+
+**Function** - The account open action requires an application key. This is known only to the 
+server and the applications. The other requests don't require the key, just the email and password.
+
 **Request**  
 Query: ?type=accountOpen | accountClose | accountModify  
 Method : POST  
@@ -174,7 +179,7 @@ Message Body: JSON object containing data
 
 *Example request URL:*
 
-    https://api.app.example.com/?type=accountOpen&email=user@example.com&password=secret
+    https://api.app.example.com/?type=accountOpen&email=user@example.com&password=secret?key=secret
 
 *Example request body:*
 
