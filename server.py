@@ -30,7 +30,6 @@ import web
 urls = (
     '/', 'Index',
     '/(.*)/', 'Redirect',
-    '/api.php', 'API',
     '/test', 'Test',
     '/syncDown/(.*)', 'SyncDown',
     '/syncUp/(.*)', 'SyncUp'
@@ -45,33 +44,29 @@ class Index(object):
 
     def GET(self):
         Log.debug(self, 'GET')
-        return 'Welcome to Tucker Sync API'
+
+        query = web.input(type=None)
+        Log.debug(self, 'query = %s' % query)
+
+        if query.type == 'test':
+            return Test().GET()
+        if query.type == 'syncDown':
+            return SyncDown().GET('product')
+        if query.type == 'syncUp':
+            return SyncUp().GET('product')
+        else:
+            return 'Welcome to Tucker Sync API'
 
 
 class Redirect(object):
     """Redirect (303) requests with trailing slashes."""
 
+    def __init__(self):
+        Log.debug(self, 'init')
+
     @staticmethod
     def GET(path):
         web.seeother('/' + path)
-
-
-class API(object):
-    """Marshall requests against /api.php to the matching handler."""
-
-    def GET(self):
-        Log.debug(self, 'GET')
-
-        query = web.input(type=None)
-        Log.debug(self, 'query = %s' % query)
-
-        # only required due to 'api.php' having a default Content-Type.
-        web.header('Content-Type', 'text/html')
-
-        if query.type == 'test':
-            return Test().GET()
-        else:
-            return Index().GET()
 
 
 class Test(object):

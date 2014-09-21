@@ -21,17 +21,41 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
+import requests
 import unittest
 
 import client
+from common import APIQuery, HTTP
 
 # Customisable
-BASE_URL = "http://0.0.0.0:8080/api.php"
-#BASE_URL = "http://0.0.0.0:8080"
+BASE_URL = "http://0.0.0.0:8080/"
 
 
-class Tests(unittest.TestCase):
+class ServerTests(unittest.TestCase):
+    """Server unit tests."""
+
+    def test_0010_get_server_root(self):
+        """Test server 'root'."""
+        response = requests.get(BASE_URL)
+        self.assertEquals(HTTP.OK, response.status_code)
+
+    def test_0020_get_server_test_function(self):
+        """Test server 'test' function."""
+        response = requests.get(BASE_URL + APIQuery.TEST)
+        self.assertEquals(HTTP.OK, response.status_code)
+
+    def test_0030_get_server_sync_down_function(self):
+        """Test server 'syncDown' function."""
+        response = requests.get(BASE_URL + APIQuery.SYNC_DOWN)
+        self.assertEquals(HTTP.OK, response.status_code)
+
+    def test_0040_get_server_sync_up_function(self):
+        """Test server 'syncUp' function."""
+        response = requests.get(BASE_URL + APIQuery.SYNC_UP)
+        self.assertEquals(HTTP.OK, response.status_code)
+
+
+class IntegrationTests(unittest.TestCase):
     """Test the API by exercising the client and server.
 
     These tests are more integration than unit tests.
@@ -42,7 +66,8 @@ class Tests(unittest.TestCase):
         # TODO start server, for now start manually using IDE Run Server run configuration.
         self.client_A = client.Client(BASE_URL)
 
-    def test_connection(self):
+    def test_0010_connection(self):
+        """Test client's connection to server."""
         self.assertEquals(True, self.client_A.check_connection())
 
     def tearDown(self):
@@ -85,10 +110,10 @@ def main():
     ##unittest.main()
 
     # Nice way to run unit tests.
-    #suite = unittest.TestLoader().loadTestsFromTestCase(RemoteServerTests)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(ServerTests)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
-    suite = unittest.TestLoader().loadTestsFromTestCase(Tests)
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(IntegrationTests)
     unittest.TextTestRunner(verbosity=2).run(suite)
 
     # Run Clients
