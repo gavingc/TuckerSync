@@ -6,6 +6,10 @@
 # Just for trying out code in context.
 scratch.py
 
+# Virtualenv symlink or directory (env/) and install directory (e.g. virtualenv-1.11.6)
+env
+virtualenv*
+
 #### https://github.com/github/gitignore/blob/master/Global/JetBrains.gitignore
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
@@ -64,7 +68,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-env/
 build/
 develop-eggs/
 dist/
