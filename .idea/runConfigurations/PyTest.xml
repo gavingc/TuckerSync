@@ -1,29 +1,29 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Unittests" type="tests" factoryName="Unittests">
+  <configuration default="false" name="PyTest" type="tests" factoryName="py.test">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs />
-    <option name="SDK_HOME" value="/usr/bin/python2.6" />
+    <option name="SDK_HOME" value="$PROJECT_DIR$/env/bin/python" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="TuckerSync" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests.py" />
+    <option name="SCRIPT_NAME" value="" />
     <option name="CLASS_NAME" value="" />
     <option name="METHOD_NAME" value="" />
     <option name="FOLDER_NAME" value="" />
     <option name="TEST_TYPE" value="TEST_SCRIPT" />
     <option name="PATTERN" value="" />
     <option name="USE_PATTERN" value="false" />
-    <option name="PUREUNITTEST" value="true" />
-    <option name="PARAMS" value="" />
-    <option name="USE_PARAM" value="false" />
+    <option name="testToRun" value="$PROJECT_DIR$/tests.py" />
+    <option name="keywords" value="" />
+    <option name="params" value="-vx" />
+    <option name="USE_PARAM" value="true" />
+    <option name="USE_KEYWORD" value="false" />
     <RunnerSettings RunnerId="PythonRunner" />
-    <RunnerSettings RunnerId="Run" />
     <ConfigurationWrapper RunnerId="PythonRunner" />
-    <ConfigurationWrapper RunnerId="Run" />
     <method />
   </configuration>
 </component>

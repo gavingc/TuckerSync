@@ -21,8 +21,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import pytest
 import requests
-import unittest
 
 import client
 from common import APIQuery, HTTP
@@ -31,48 +31,42 @@ from common import APIQuery, HTTP
 BASE_URL = "http://0.0.0.0:8080/"
 
 
-class ServerTests(unittest.TestCase):
+class TestServer(object):
     """Server unit tests."""
 
-    def test_0010_get_server_root(self):
+    def test_get_server_root(self):
         """Test server 'root'."""
         response = requests.get(BASE_URL)
-        self.assertEquals(HTTP.OK, response.status_code)
+        assert HTTP.OK == response.status_code
 
-    def test_0020_get_server_test_function(self):
+    def test_get_server_test_function(self):
         """Test server 'test' function."""
         response = requests.get(BASE_URL + APIQuery.TEST)
-        self.assertEquals(HTTP.OK, response.status_code)
+        assert HTTP.OK == response.status_code
 
-    def test_0030_get_server_sync_down_function(self):
+    def test_get_server_sync_down_function(self):
         """Test server 'syncDown' function."""
         response = requests.get(BASE_URL + APIQuery.SYNC_DOWN)
-        self.assertEquals(HTTP.OK, response.status_code)
+        assert HTTP.OK == response.status_code
 
-    def test_0040_get_server_sync_up_function(self):
+    def test_get_server_sync_up_function(self):
         """Test server 'syncUp' function."""
         response = requests.get(BASE_URL + APIQuery.SYNC_UP)
-        self.assertEquals(HTTP.OK, response.status_code)
+        assert HTTP.OK == response.status_code
 
 
-class IntegrationTests(unittest.TestCase):
-    """Test the API by exercising the client and server.
+class TestIntegration(object):
+    """Test the API by exercising the client and server."""
 
-    These tests are more integration than unit tests.
-    Python unittest is just used as the test runner.
-    """
-
-    def setUp(self):
+    @pytest.fixture(scope="class")
+    def client_a(self):
         # TODO start server, for now start manually using IDE Run Server run configuration.
-        self.client_A = client.Client(BASE_URL)
+        return client.Client(BASE_URL)
 
-    def test_0010_connection(self):
+    def test_connection(self, client_a):
         """Test client's connection to server."""
-        self.assertEquals(True, self.client_A.check_connection())
+        assert True == client_a.check_connection()
 
-    def tearDown(self):
-        # TODO stop server.
-        pass
 
 # # Client A Thread
 # class clientA(Thread):
@@ -106,15 +100,8 @@ class IntegrationTests(unittest.TestCase):
 def main():
     """Called when this module is the primary one."""
 
-    # Easy way to run unit tests.
-    ##unittest.main()
-
-    # Nice way to run unit tests.
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(ServerTests)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(IntegrationTests)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    # Run PyTest, verbose, exit on first error, specify this file only.
+    pytest.main(['-vx', __file__])
 
     # Run Clients
     #clientA().start()
