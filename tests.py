@@ -21,37 +21,38 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import sys
 import pytest
 import requests
 
 import client
 from common import APIQuery, HTTP
 
-# Customisable
-BASE_URL = "http://0.0.0.0:8080/"
-
 
 class TestServer(object):
-    """Server unit tests."""
+    """Server unit tests.
 
-    def test_get_server_root(self):
+    base_url is a test fixture defined in conftest.py
+    """
+
+    def test_get_server_root(self, base_url):
         """Test server 'root'."""
-        response = requests.get(BASE_URL)
+        response = requests.get(base_url)
         assert HTTP.OK == response.status_code
 
-    def test_get_server_test_function(self):
+    def test_get_server_test_function(self, base_url):
         """Test server 'test' function."""
-        response = requests.get(BASE_URL + APIQuery.TEST)
+        response = requests.get(base_url + APIQuery.TEST)
         assert HTTP.OK == response.status_code
 
-    def test_get_server_sync_down_function(self):
+    def test_get_server_sync_down_function(self, base_url):
         """Test server 'syncDown' function."""
-        response = requests.get(BASE_URL + APIQuery.SYNC_DOWN)
+        response = requests.get(base_url + APIQuery.SYNC_DOWN)
         assert HTTP.OK == response.status_code
 
-    def test_get_server_sync_up_function(self):
+    def test_get_server_sync_up_function(self, base_url):
         """Test server 'syncUp' function."""
-        response = requests.get(BASE_URL + APIQuery.SYNC_UP)
+        response = requests.get(base_url + APIQuery.SYNC_UP)
         assert HTTP.OK == response.status_code
 
 
@@ -59,9 +60,9 @@ class TestIntegration(object):
     """Test the API by exercising the client and server."""
 
     @pytest.fixture(scope="class")
-    def client_a(self):
+    def client_a(self, base_url):
         # TODO start server, for now start manually using IDE Run Server run configuration.
-        return client.Client(BASE_URL)
+        return client.Client(base_url)
 
     def test_connection(self, client_a):
         """Test client's connection to server."""
@@ -100,8 +101,22 @@ class TestIntegration(object):
 def main():
     """Called when this module is the primary one."""
 
-    # Run PyTest, verbose, exit on first error, specify this file only.
-    pytest.main(['-vx', __file__])
+    # PyTest argument list: verbose, exit on first failure.
+    args = ['-vx']
+
+    # Optional single command line argument specifying the server base url.
+    # Example command line: ./tests.py "http://0.0.0.0:8080/"
+    if len(sys.argv) > 1:
+        args.append('--baseurl')
+        args.append(sys.argv[1])
+
+    # Specify this file as the only test file.
+    args.append(__file__)
+
+    # Run PyTest with the supplied args.
+    # Equivalent to PyTest command line:
+    # env/bin/py.test -vx --baseurl "http://0.0.0.0:8080/" tests.py
+    pytest.main(args)
 
     # Run Clients
     #clientA().start()
