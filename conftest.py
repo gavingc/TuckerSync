@@ -37,3 +37,8 @@ def pytest_addoption(parser):
 def base_url(request):
     """Server base url fixture."""
     return request.config.getoption("--baseurl")
+
+
+def pytest_report_header(config):
+    """Test report header."""
+    return "Testing server base url: " + config.getoption("--baseurl")
