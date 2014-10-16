@@ -21,10 +21,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-import json
 import sys
 import logging
+from common import JSON
 import web
 
 urls = (
@@ -91,10 +90,10 @@ class SyncDown(object):
         Log.debug(self, 'object_class = %s' % object_class)
 
         with open('data.json') as f:
-            j1 = json.load(f)
-            Log.debug(self, 'j1["products"][0] = %s' % j1["products"][0])
+            jo = JSON.load(f)
+            Log.debug(self, 'jo["products"][0] = %s' % jo["products"][0])
 
-        return json.dumps(j1)
+        return JSON.dumps(jo)
 
 
 class SyncUp(object):

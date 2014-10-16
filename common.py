@@ -21,6 +21,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import json
 
 
 class APIQuery(object):
@@ -51,3 +52,19 @@ class HTTP(object):
     """HTTP constants."""
 
     OK = 200
+
+
+class JSON(object):
+    """Custom json wrapper."""
+
+    compact_separators = (',', ':')
+
+    @staticmethod
+    def dumps(obj):
+        """Dump an object to a compact json string."""
+        return json.dumps(obj, separators=JSON.compact_separators)
+
+    @staticmethod
+    def load(fp):
+        """Load (read) a file like object and return a Python native json object."""
+        return json.load(fp)
