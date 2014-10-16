@@ -57,12 +57,17 @@ class HTTP(object):
 class JSON(object):
     """Custom json wrapper."""
 
-    compact_separators = (',', ':')
+    COMPACT_SEPARATORS = (',', ':')
 
     @staticmethod
     def dumps(obj):
         """Dump an object to a compact json string."""
-        return json.dumps(obj, separators=JSON.compact_separators)
+        return json.dumps(obj, separators=JSON.COMPACT_SEPARATORS)
+
+    @staticmethod
+    def loads(s):
+        """Load a string and return a Python native json object."""
+        return json.loads(s)
 
     @staticmethod
     def load(fp):

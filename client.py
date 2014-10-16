@@ -21,12 +21,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-from json import JSONDecoder
 import requests
 import uuid
 
-from common import APIQuery, JSONKey, APIErrorCode, HTTP
+from common import APIQuery, JSONKey, APIErrorCode, HTTP, JSON
 
 
 class Client(object):
@@ -42,16 +40,44 @@ class Client(object):
         response = requests.get(url)
 
         print ''
-        print 'DEBUG url = ' + str(url)
-        print 'DEBUG status_code = ' + str(response.status_code)
-        print 'DEBUG content = ' + response.content
+        print 'DEBUG url = ', str(url)
+
+        try:
+            jo = self.get_json_object(response)
+        except Exception, e:
+            print 'DEBUG get_json_object exception = ', type(e)
+            return False
+
+        if jo[JSONKey.ERROR] != APIErrorCode.SUCCESS:
+            print 'DEBUG API error code = ', jo[JSONKey.ERROR]
+            return False
+
+        # Success
+        return True
+
+    @staticmethod
+    def get_json_object(response):
+        """Get the json object (Python dictionary) from the response or raise an exception."""
+
+        print 'DEBUG status_code =', response.status_code
+        print 'DEBUG content =', response.content
 
         if response.status_code != HTTP.OK:
-            return False
+            raise Exception
 
-        json = JSONDecoder().decode(response.content)
-        if json[JSONKey.ERROR] != APIErrorCode.SUCCESS:
-            return False
+        try:
+            jo = JSON.loads(response.content)
+        except Exception as e:
+            print 'DEBUG json decode exception = ', type(e)
+            raise Exception
+
+        if not type(jo) is dict:
+            print 'DEBUG jo is not an object/dict.'
+            raise Exception
+
+        if not JSONKey.ERROR in jo:
+            print 'DEBUG jo has no `error` key.'
+            raise Exception
 
         # Success.
-        return True
+        return jo

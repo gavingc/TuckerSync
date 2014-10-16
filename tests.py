@@ -24,9 +24,11 @@
 import sys
 import pytest
 import requests
+import uuid
+from flexmock import flexmock
 
 import client
-from common import APIQuery, HTTP
+from common import APIQuery, HTTP, JSON
 
 
 class TestServer(object):
@@ -54,6 +56,55 @@ class TestServer(object):
         """Test server 'syncUp' function."""
         response = requests.get(base_url + APIQuery.SYNC_UP)
         assert HTTP.OK == response.status_code
+
+
+class TestClient(object):
+    """Client unit tests."""
+
+    @pytest.fixture(scope="class")
+    def client_a(self, base_url):
+        return client.Client(base_url)
+
+    @pytest.fixture(scope="class")
+    def client_b(self, base_url):
+        return client.Client(base_url)
+
+    @pytest.fixture(scope="function")
+    def mock_response(self):
+        return flexmock(status_code=200, content='{"error":0}')
+
+    def test_client_creation(self, client_a):
+        assert client_a
+
+    def test_client_uuid(self, client_a):
+        assert isinstance(client_a.UUID, uuid.UUID)
+
+    def test_client_uuid_is_unique(self, client_a, client_b):
+        assert client_a.UUID != client_b.UUID
+
+    def test_client_get_json(self, client_a, mock_response):
+        jo = client_a.get_json_object(mock_response)
+        assert mock_response.content == JSON.dumps(jo)
+
+    def test_client_get_json_non_ok_status_code(self, client_a, mock_response):
+        mock_response.status_code = 401
+        with pytest.raises(Exception):
+            client_a.get_json_object(mock_response)
+
+    def test_client_get_json_empty_content(self, client_a, mock_response):
+        mock_response.content = ''
+        with pytest.raises(Exception):
+            client_a.get_json_object(mock_response)
+
+    def test_client_get_json_non_object_content(self, client_a, mock_response):
+        mock_response.content = '[]'
+        with pytest.raises(Exception):
+            client_a.get_json_object(mock_response)
+
+    def test_client_get_json_no_error_key_content(self, client_a, mock_response):
+        mock_response.content = '{}'
+        with pytest.raises(Exception):
+            client_a.get_json_object(mock_response)
 
 
 class TestIntegration(object):
