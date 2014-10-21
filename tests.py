@@ -112,41 +112,64 @@ class TestIntegration(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        # TODO start server, for now start manually using IDE Run Server run configuration.
         return client.Client(base_url)
 
     def test_connection(self, client_a):
         """Test client's connection to server."""
-        assert True == client_a.check_connection()
+        result = client_a.check_connection()
+        assert True == result
 
 
-# # Client A Thread
-# class clientA(Thread):
-#     def run(self):
-#         for x in xrange(0, 11):
-#             runClientA()
-#             time.sleep(1)
-#
-# # Client B Thread
-# class clientB(Thread):
-#     def run(self):
-#         for x in xrange(100, 103):
-#             runClientB()
-#             time.sleep(5)
-#
-#
-# def runClientA():
-#     print('Run Client A UUID: ' + str(clientAUuid))
-#     http = httplib2.Http()
-#     resp_headers, content = http.request(BASE_URL, OK)
-#     print(content)
-#
-#
-# def runClientB():
-#     print('Run Client B UUID: ' + str(clientBUuid))
-#     http = httplib2.Http()
-#     resp_headers, content = http.request(BASE_URL, GET)
-#     print(content)
+class TestMultipleClientIntegration(object):
+    """Test the API by exercising multiple clients and server."""
+
+    @pytest.fixture(scope="class")
+    def client_a(self, base_url):
+        return client.Client(base_url)
+
+    @pytest.fixture(scope="class")
+    def client_b(self, base_url):
+        return client.Client(base_url)
+
+    def test_connection_with_sequential_clients(self, client_a, client_b):
+        for x in xrange(8):
+            r1 = client_a.check_connection()
+            r2 = client_b.check_connection()
+            assert True == r1
+            assert True == r2
+
+    def test_connection_with_parallel_clients(self, client_a, base_url):
+        """Client A is run in the test process while client C is run in another process.
+
+        This allows genuine parallel execution of the client module code in Python.
+        Connections to the server are effectively a race condition for each client."""
+
+        from multiprocessing import Process, Queue
+
+        def run_client_a():
+            short_uuid = str(client_a.UUID)[:6]
+            for x in xrange(8):
+                print 'client a, short UUID:', short_uuid
+                r1 = client_a.check_connection()
+                assert True == r1
+
+        def run_client_c(q, url):
+            r = True
+            client_c = client.Client(url)
+            short_uuid = str(client_c.UUID)[:6]
+            for x in xrange(8):
+                print 'client c, short UUID:', short_uuid
+                if client_c.check_connection() is False:
+                    r = False
+            q.put(r)
+
+        queue = Queue()
+        Process(target=run_client_c, args=(queue, base_url)).start()
+
+        run_client_a()
+
+        client_c_result = queue.get()
+        assert True == client_c_result
 
 
 def main():
