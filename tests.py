@@ -32,7 +32,7 @@ from common import APIQuery, HTTP, JSON
 
 
 class TestServer(object):
-    """Server unit tests.
+    """Server functional tests.
 
     base_url is a test fixture defined in conftest.py
     """
