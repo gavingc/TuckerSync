@@ -173,10 +173,14 @@ class TestMultipleClientIntegration(object):
 
 
 def main():
-    """Called when this module is the primary one."""
+    """Called when this module is the primary one.
 
-    # PyTest argument list: verbose, exit on first failure.
-    args = ['-vx']
+    Which is true when commands read either from standard input,
+    from a script file, or from an interactive prompt.
+    """
+
+    # PyTest argument list: verbose, exit on first failure and caplog format.
+    args = ['-vx', '--log-format=%(levelname)s:%(name)s:%(message)s']
 
     # Optional single command line argument specifying the server base url.
     # Example command line: ./tests.py "http://0.0.0.0:8080/"
@@ -189,7 +193,8 @@ def main():
 
     # Run PyTest with the supplied args.
     # Equivalent to PyTest command line:
-    # env/bin/py.test -vx --baseurl "http://0.0.0.0:8080/" tests.py
+    # env/bin/py.test -vx --log-format="%(levelname)s:%(name)s:%(message)s"
+    # --baseurl "http://0.0.0.0:8080/" tests.py
     pytest.main(args)
 
     # Run Clients
@@ -197,6 +202,4 @@ def main():
     #clientB().start()
 
 if __name__ == "__main__":
-    # Run main when commands read either from standard input,
-    # from a script file, or from an interactive prompt.
     main()

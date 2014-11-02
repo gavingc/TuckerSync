@@ -24,10 +24,13 @@
 import requests
 import uuid
 
-from common import APIQuery, JSONKey, APIErrorCode, HTTP, JSON
+from common import APIQuery, JSONKey, APIErrorCode, HTTP, JSON, Logger
+
+LOG = Logger(__file__)
 
 
 class Client(object):
+
     """A Tucker Sync Client Implementation."""
 
     def __init__(self, base_url):
@@ -39,17 +42,16 @@ class Client(object):
         url = self.base_url + APIQuery.TEST
         response = requests.get(url)
 
-        print ''
-        print 'DEBUG url = ', str(url)
+        LOG.debug(self, 'url = %s', url)
 
         try:
             jo = self.get_json_object(response)
-        except Exception, e:
-            print 'DEBUG get_json_object exception = ', type(e)
+        except Exception as e:
+            LOG.debug(self, 'Check connection failed with exception = %s', e)
             return False
 
         if jo[JSONKey.ERROR] != APIErrorCode.SUCCESS:
-            print 'DEBUG API error code = ', jo[JSONKey.ERROR]
+            LOG.debug(self, 'Check connection failed with API error code = %s', jo[JSONKey.ERROR])
             return False
 
         # Success
@@ -59,24 +61,25 @@ class Client(object):
     def get_json_object(response):
         """Get the json object (Python dictionary) from the response or raise an exception."""
 
-        print 'DEBUG status_code =', response.status_code
-        print 'DEBUG content =', response.content
+        LOG.debug(Client, 'status_code = %s', response.status_code)
+        LOG.debug(Client, 'content = %s', response.content)
 
         if response.status_code != HTTP.OK:
+            LOG.debug(Client, 'HTTP status code != HTTP.OK')
             raise Exception
 
         try:
             jo = JSON.loads(response.content)
         except Exception as e:
-            print 'DEBUG json decode exception = ', type(e)
-            raise Exception
+            LOG.debug(Client, 'get_json_object exception = %s', e)
+            raise e
 
         if not type(jo) is dict:
-            print 'DEBUG jo is not an object/dict.'
+            LOG.debug(Client, 'Type of jo is not an object/dict.')
             raise Exception
 
         if not JSONKey.ERROR in jo:
-            print 'DEBUG jo has no `error` key.'
+            LOG.debug(Client, 'The decoded jo has no `error` key.')
             raise Exception
 
         # Success.

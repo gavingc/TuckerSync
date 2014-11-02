@@ -3,6 +3,7 @@ flexmock==0.9.7
 flup==1.0.2
 py==1.4.24
 pytest==2.6.2
+pytest-capturelog==0.7
 requests==2.4.1
 test-pkg==0.0
 web.py==0.37
