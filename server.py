@@ -110,15 +110,18 @@ class SyncUp(object):
 
 
 class Log(object):
-    """Custom logger wrapper.
+    """Custom (light) logger wrapper.
 
-    Use: Log.debug(self, 'value = %s' % value)Includes the calling
-    class name in the output.
+    Includes the module name and calling class name in the output.
+    Lazily initialised with the module name the first time Log is called.
+
+    Usage:
+        Log.debug(self, 'value = %s' % value)
     """
 
     # Module logger.
     logger = logging.getLogger(__name__)
-    logger.debug('Log init.')
+    logger.debug('Log:init.')
 
     @staticmethod
     def debug(obj, arg):
