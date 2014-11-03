@@ -1,26 +1,17 @@
 #!env/bin/python
-#
-# The MIT License (MIT)
-#
-# Copyright (c) 2014 Steven Tucker and Gavin Kromhout
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
+
+"""Test suite for the Tucker Sync algorithm, server and client.
+
+Usage:
+    See main().
+
+License:
+    The MIT License (MIT), see LICENSE.txt for more details.
+
+Copyright:
+    Copyright (c) 2014 Steven Tucker and Gavin Kromhout.
+"""
+
 import sys
 import pytest
 import requests
@@ -173,10 +164,13 @@ class TestMultipleClientIntegration(object):
 
 
 def main():
-    """Called when this module is the primary one.
+    """Run the test suite.
 
-    Which is true when commands read either from standard input,
-    from a script file, or from an interactive prompt.
+    Accepts an optional command line argument to specify the server base url.
+
+    Usage:
+        ./tests.py
+        ./tests.py "http://0.0.0.0:8080/"
     """
 
     # PyTest argument list: verbose, exit on first failure and caplog format.
@@ -201,5 +195,8 @@ def main():
     #clientA().start()
     #clientB().start()
 
+
+# Run main when commands read either from standard input,
+# from a script file, or from an interactive prompt.
 if __name__ == "__main__":
     main()
