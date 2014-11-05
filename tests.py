@@ -35,19 +35,19 @@ class TestServer(object):
         response = requests.get(base_url)
         assert HTTP.OK == response.status_code
 
-    def test_get_server_test_function(self, base_url):
+    def test_post_server_test_function(self, base_url):
         """Test server 'test' function."""
-        response = requests.get(base_url + APIQuery.TEST)
+        response = requests.post(base_url + APIQuery.TEST)
         assert HTTP.OK == response.status_code
 
-    def test_get_server_sync_down_function(self, base_url):
+    def test_post_server_sync_down_function(self, base_url):
         """Test server 'syncDown' function."""
-        response = requests.get(base_url + APIQuery.SYNC_DOWN)
+        response = requests.post(base_url + APIQuery.SYNC_DOWN)
         assert HTTP.OK == response.status_code
 
-    def test_get_server_sync_up_function(self, base_url):
+    def test_post_server_sync_up_function(self, base_url):
         """Test server 'syncUp' function."""
-        response = requests.get(base_url + APIQuery.SYNC_UP)
+        response = requests.post(base_url + APIQuery.SYNC_UP)
         assert HTTP.OK == response.status_code
 
 

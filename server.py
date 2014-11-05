@@ -34,18 +34,20 @@ class Index(object):
 
     def GET(self):
         Log.debug(self, 'GET')
+        return 'Welcome to Tucker Sync API.'
+
+    def POST(self):
+        Log.debug(self, 'POST')
 
         query = web.input(type=None)
         Log.debug(self, 'query = %s' % query)
 
         if query.type == 'test':
-            return Test().GET()
+            return Test().POST()
         if query.type == 'syncDown':
-            return SyncDown().GET('product')
+            return SyncDown().POST('product')
         if query.type == 'syncUp':
-            return SyncUp().GET('product')
-        else:
-            return 'Welcome to Tucker Sync API'
+            return SyncUp().POST('product')
 
 
 class Redirect(object):
@@ -58,6 +60,10 @@ class Redirect(object):
     def GET(path):
         web.seeother('/' + path)
 
+    @staticmethod
+    def POST(path):
+        web.seeother('/' + path)
+
 
 class Test(object):
     """Respond to requests against /test."""
@@ -65,8 +71,8 @@ class Test(object):
     def __init__(self):
         Log.debug(self, 'init')
 
-    def GET(self):
-        Log.debug(self, 'GET')
+    def POST(self):
+        Log.debug(self, 'POST')
 
         query = web.input(email=None, password=None)
         Log.debug(self, 'query = %s' % query)
@@ -76,8 +82,8 @@ class Test(object):
 class SyncDown(object):
     """Sync Download Phase API handler."""
 
-    def GET(self, object_class):
-        Log.debug(self, 'GET')
+    def POST(self, object_class):
+        Log.debug(self, 'POST')
         Log.debug(self, 'object_class = %s' % object_class)
 
         with open('data.json') as f:
@@ -90,8 +96,8 @@ class SyncDown(object):
 class SyncUp(object):
     """Sync Upload Phase API handler."""
 
-    def GET(self, object_class):
-        Log.debug(self, 'GET')
+    def POST(self, object_class):
+        Log.debug(self, 'POST')
         Log.debug(self, 'object_class = %s' % object_class)
 
         body = '{ "error":0, ' \

@@ -31,7 +31,7 @@ class Client(object):
 
     def check_connection(self):
         url = self.base_url + APIQuery.TEST
-        response = requests.get(url)
+        response = requests.post(url)
 
         LOG.debug(self, 'url = %s', url)
 
