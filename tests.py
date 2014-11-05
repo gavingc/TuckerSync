@@ -3,6 +3,8 @@
 """Test suite for the Tucker Sync algorithm, server and client.
 
 Usage:
+    ./test.py --help
+    or
     See main().
 
 License:
@@ -12,7 +14,7 @@ Copyright:
     Copyright (c) 2014 Steven Tucker and Gavin Kromhout.
 """
 
-import sys
+import argparse
 import pytest
 import requests
 import uuid
@@ -166,29 +168,44 @@ class TestMultipleClientIntegration(object):
 def main():
     """Run the test suite.
 
-    Accepts an optional command line argument to specify the server base url.
+    Accepted optional command line arguments:
+        --help to view help.
+        --baseurl BASEURL to specify the server base url.
+        -k K to only run tests which match the given substring expression.
 
     Usage:
         ./tests.py
-        ./tests.py "http://0.0.0.0:8080/"
+        ./tests.py --help
+        ./tests.py --baseurl "http://0.0.0.0:8080/"
+        ./tests.py -k "TestIntegration or TestMultiple"
+        ./tests.py --baseurl "http://0.0.0.0:8080/" -k "TestIntegration or TestMultiple"
     """
 
     # PyTest argument list: verbose, exit on first failure and caplog format.
     args = ['-vx', '--log-format=%(levelname)s:%(name)s:%(message)s']
 
-    # Optional single command line argument specifying the server base url.
-    # Example command line: ./tests.py "http://0.0.0.0:8080/"
-    if len(sys.argv) > 1:
+    # Command line arguments.
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--baseurl", help="Specify the server base url.")
+    parser.add_argument("-k", help="Only run tests which match the given substring expression.")
+    cmd_args = parser.parse_args()
+
+    # Optional command line argument specifying the server base url.
+    if cmd_args.baseurl:
         args.append('--baseurl')
-        args.append(sys.argv[1])
+        args.append(cmd_args.baseurl)
 
     # Specify this file as the only test file.
     args.append(__file__)
 
+    # Optional command line argument to only run tests which match the given substring expression.
+    if cmd_args.k:
+        args.append('-k %s' % cmd_args.k)
+
     # Run PyTest with the supplied args.
     # Equivalent to PyTest command line:
     # env/bin/py.test -vx --log-format="%(levelname)s:%(name)s:%(message)s"
-    # --baseurl "http://0.0.0.0:8080/" tests.py
+    #   --baseurl "http://0.0.0.0:8080/" tests.py -k "TestIntegration or TestMultiple"
     pytest.main(args)
 
     # Run Clients
