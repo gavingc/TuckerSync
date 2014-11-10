@@ -21,7 +21,6 @@ LOG = Logger(__file__)
 
 
 class Client(object):
-
     """A Tucker Sync Client Implementation."""
 
     def __init__(self, base_url):

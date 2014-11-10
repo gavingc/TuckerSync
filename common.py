@@ -14,7 +14,6 @@ import os
 
 
 class Logger(object):
-
     """Custom logger wrapper.
 
     Typical use includes the module (file) and class name in the log output.
