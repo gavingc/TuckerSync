@@ -98,8 +98,12 @@ class APIQuery(object):
     """The API query constants."""
 
     TEST = "?type=test"
+    BASE_DATA_DOWN = "?type=baseDataDown"
     SYNC_DOWN = "?type=syncDown"
     SYNC_UP = "?type=syncUp"
+
+    EMAIL = "&email="
+    PASSWORD = "&password="
 
 
 class JSONKey(object):

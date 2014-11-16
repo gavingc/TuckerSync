@@ -23,13 +23,17 @@ LOG = Logger(__file__)
 class Client(object):
     """A Tucker Sync Client Implementation."""
 
-    def __init__(self, base_url):
+    def __init__(self, base_url, email, password):
         self.base_url = base_url
+        self.email = email
+        self.password = password
         self.UUID = uuid.uuid4()
         # TODO init storage.
 
     def check_connection(self):
         url = self.base_url + APIQuery.TEST
+        url += APIQuery.EMAIL + self.email
+        url += APIQuery.PASSWORD + self.password
         response = requests.post(url)
 
         LOG.debug(self, 'url = %s', url)
