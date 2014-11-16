@@ -1,7 +1,7 @@
 Tucker Sync API
 ===============
 
-Synchronisation over HTTPS, using POST and JSON.  
+Synchronisation over HTTPS, using POST and JSON.
 *Version 0.4*
 
 Motivation
@@ -16,26 +16,26 @@ Complete with client and server implementation (Python and PHP).
 Terminology
 -----------
 
-A **client** is identified uniquely in the server-client relationship.  
-A **user** is identified uniquely and may have multiple clients running on different devices.  
-A **device** may have multiple users and each is a unique client.  
+A **client** is identified uniquely in the server-client relationship.
+A **user** is identified uniquely and may have multiple clients running on different devices.
+A **device** may have multiple users and each is a unique client.
 
-syncCount - camel case indicates a server value.  
-last_sync - underscore indicates a client value.  
+syncCount - camel case indicates a server value.
+last_sync - underscore indicates a client value.
 
 Operation
 ---------
 
-Synchronisation is always initiated by the client application.  
+Synchronisation is always initiated by the client application.
 Although it may be prompted to do so by another channel, for example a Cloud Messaging Service.
 
 Sync occurs in two phases:
 
-**Download Phase** - client requests new and remotely changed objects from server since last sync.  
+**Download Phase** - client requests new and remotely changed objects from server since last sync.
 **Upload Phase** - client uploads new and locally changed objects to the server.
 
-The server maintains a universal sync counter (syncCount).  
-This is used in preference to the more fickle timestamp sometimes used in sync API.  
+The server maintains a universal sync counter (syncCount).
+This is used in preference to the more fickle timestamp sometimes used in sync API.
 
 Download Phase
 --------------
@@ -73,13 +73,13 @@ This pattern would generally sync all objects in a class. With an arbitrary maxi
 
 UUIDs are not used to identify objects due to their size impact on the client. Instead the client generates a single UUID to identify itself to the server and sends it’s local id for each object thus allowing the server to identify duplicate new objects. Achieved by setting a unique constraint, see Server Schema.
 
-An anonymous user download phase may be performed to pull any base data objects. An anonymous account create request may be performed. All other requests require authentication by email and password against an account on the server.
+An anonymous base data download may be performed to pull any base data objects. All other requests require authentication by email and password against an account on the server.
 
 The client should probably perform a background sync on startup and a blocking/modal sync during operation with background on exit. The client may wish to perform a download phase on first start.
 
-**Base URL Example**  
-https://api.app.example.com/  
-(Use a .htaccess rewrite rule with index.php)  
+**Base URL Example**
+https://api.app.example.com/
+(Use a .htaccess rewrite rule with index.php)
 
 Test Request
 ------------
@@ -88,9 +88,9 @@ Test Request
 
 **Function** - The test function will perform some basic availability tests on the server and reply with the appropriate error value. If no error, then the client can continue with the assumption that the server is available and functioning correctly. This call can be useful when first contacting the server, or after a failed communication to check the server before trying again.
 
-**Request**  
-Query: ?type=test  
-Method: POST  
+**Request**
+Query: ?type=test
+Method: POST
 
 *Example request URL:*
 
@@ -100,13 +100,42 @@ Method: POST
 
     { "data":{} }
 
-**Response**  
+**Response**
 Message Body: JSON object containing error code.
 
-*Example response code:* 200  
-*Example response body:*  
+*Example response code:* 200
+*Example response body:*
 
     { "error":1 }
+
+Base Data Download Request
+--------------------------
+
+**Summary** - Download base data objects for class.
+
+**Function** - A server may provide a set of base data for class. This request may be anonymous
+but requires the application key.
+
+**Request**
+Query: ?type=baseDataDown
+Method: POST
+Message Body: JSON object containing class, lastSync and clientUUID.
+
+*Example request URL:*
+
+    https://api.app.example.com/?type=baseDataDown&key=secret
+
+*Example request body:*
+
+    {"class":"product","clientUUID":"UUID","lastSync":123}
+
+**Response**
+Message Body: JSON object containing error and objects.
+
+*Example response code:* 200
+*Example response body:*
+
+    {"error":0,"objects":[{"serverObjectId":1,"lastSync":124},{"serverObjectId":n}]}
 
 Sync Download Request
 ---------------------
@@ -115,9 +144,9 @@ Sync Download Request
 
 **Function** - Sync logical data objects between client and server for backup, replication and sharing purposes.
 
-**Request**  
-Query: ?type=syncDown  
-Method: POST  
+**Request**
+Query: ?type=syncDown
+Method: POST
 Message Body: JSON object containing class, lastSync and clientUUID.
 
 *Example request URL:*
@@ -128,10 +157,10 @@ Message Body: JSON object containing class, lastSync and clientUUID.
 
     { "class":"product", "clientUUID":"UUID", "lastSync":123 }
 
-**Response**  
+**Response**
 Message Body: JSON object containing error and objects.
 
-*Example response code:* 200  
+*Example response code:* 200
 *Example response body:*
 
     { "error":0, "objects":[{"serverObjectId":1, "lastSync":124}, {"serverObjectId":n}] }
@@ -143,9 +172,9 @@ Sync Upload Request
 
 **Function** - Sync logical data objects between client and server for backup, replication and sharing purposes.
 
-**Request**  
-Query: ?type=syncUp  
-Method: POST  
+**Request**
+Query: ?type=syncUp
+Method: POST
 Message Body: JSON object containing class, clientUUID and objects.
 
 *Example request URL:*
@@ -156,10 +185,10 @@ Message Body: JSON object containing class, clientUUID and objects.
 
     { "class":"product", "clientUUID":"UUID", "objects":[{"serverObjectId":0}, {"serverObjectId":n}] }
 
-**Response**  
+**Response**
 Message Body: JSON object containing error and objects.
 
-*Example response code:* 200  
+*Example response code:* 200
 *Example response body:*
 
     { "error":0, "objects":[{"serverObjectId":1, "lastSync":125}, {"serverObjectId":n}] }
@@ -169,26 +198,26 @@ Account Requests
 
 **Summary** - Allow user to manage their account on the server.
 
-**Function** - The account open action requires an application key. This is known only to the 
+**Function** - The account open action requires an application key. This is known only to the
 server and the applications. The other requests don't require the key, just the email and password.
 
-**Request**  
-Query: ?type=accountOpen | accountClose | accountModify  
-Method : POST  
+**Request**
+Query: ?type=accountOpen | accountClose | accountModify
+Method : POST
 Message Body: JSON object containing data
 
 *Example request URL:*
 
-    https://api.app.example.com/?type=accountOpen&email=user@example.com&password=secret?key=secret
+    https://api.app.example.com/?type=accountOpen&email=user@example.com&password=secret&key=secret
 
 *Example request body:*
 
     { "data":{} }
 
-**Response**  
+**Response**
 Message Body: JSON object containing error and data.
 
-*Example response code:* 200  
+*Example response code:* 200
 *Example response body:*
 
     { "error":0, "data":{} }
@@ -216,32 +245,32 @@ PHP:
 Use Cases
 ---------
 
-New local data object created on client A and backup sync to server.  
-Existing local object changed on device A and updated on server.  
-Replication to client B.  
-Changed object on client B and replicated to client A.  
-(user must sync B before A changes the same object).  
-Deleted object on client B and replicated to client A.  
+New local data object created on client A and backup sync to server.
+Existing local object changed on device A and updated on server.
+Replication to client B.
+Changed object on client B and replicated to client A.
+(user must sync B before A changes the same object).
+Deleted object on client B and replicated to client A.
 
-New object created by user X on client A and shared with user Y on client C.  
+New object created by user X on client A and shared with user Y on client C.
 
 Client Schema
 -------------
 
 Required on each object class to be synced:
 
-last_sync - long value, 0 if not synced yet, determined by server and then recorded locally by 
-client.  
-local_changes - boolean value, set by client when there are local changed yet to be synced.  
-server_object_id - long value, 0 if not synced yet, replaced with server’s id for this object 
-once synced.  
+last_sync - long value, 0 if not synced yet, determined by server and then recorded locally by
+client.
+local_changes - boolean value, set by client when there are local changed yet to be synced.
+server_object_id - long value, 0 if not synced yet, replaced with server’s id for this object
+once synced.
 
-deleted - boolean value, logical deletion on each object to propagate that deletion to other 
-clients.  
-Client may perform a cleanup run of physical deletion after sync where deleted=1 and 
-local_changes=0.  
+deleted - boolean value, logical deletion on each object to propagate that deletion to other
+clients.
+Client may perform a cleanup run of physical deletion after sync where deleted=1 and
+local_changes=0.
 
-An immediate client physical deletion should not be performed if server_object_id=0.  
+An immediate client physical deletion should not be performed if server_object_id=0.
 Since the server may actually have received a copy during a failed sync where the client did not receive the response.
 
 Server Schema
@@ -251,28 +280,28 @@ syncCount - universal long (64bit) sync counter, incremented on each successful 
 
 Required on each object class to be synced:
 
-id - server object id.  
-userId - required on each object?  
-clientId - the unique client id that created the object (e.g. )  
-clientObjectId - the object id from the client that created the object.  
-last_sync - long value, 0 if not synced yet, determined by server and then recorded locally by 
-client.  
+id - server object id.
+userId - required on each object?
+clientId - the unique client id that created the object (e.g. )
+clientObjectId - the object id from the client that created the object.
+last_sync - long value, 0 if not synced yet, determined by server and then recorded locally by
+client.
 
 The clientId and clientObjectId together form a unique constraint. Allowing the server to identify duplicates that the client may resend after a response transmission fails to reach the client:
 
     unique index `uniqueObjectConstraint` (`clientId`,`clientObjectId`)
 
-**Client**  
-id - identifier  
-userId - which user does this client belong to.  
+**Client**
+id - identifier
+userId - which user does this client belong to.
 UUID - client supplied UUID.
 
-**User**  
-id - identifier  
-email - acts as username  
-password - standard salted and encrypted.  
-accountLevel - server side account levels: free, social (friends & family), 
-professional/coach/trainer/elite/platinum.  
+**User**
+id - identifier
+email - acts as username
+password - standard salted and encrypted.
+accountLevel - server side account levels: free, social (friends & family),
+professional/coach/trainer/elite/platinum.
 isActive - open=true, closed=false.
 
 Server Functions
@@ -280,7 +309,7 @@ Server Functions
 
 User Authentication. Account management. Account upgrade.
 
-[Not implemented in this version]  
+[Not implemented in this version]
 Manage data permissions and roles (ACL).
 
 Further server functions may be defined in the application spec template.
@@ -296,13 +325,13 @@ To restore a failed server from backup:
 
  - The server must set it’s syncCount to the highest lastSync value found by examining all object classes.
 
-[Not implemented in this version]  
+[Not implemented in this version]
 Include API version, clientAppName, clientAppVersion in each call. Allows at least refusing to serve very old clients or reverting to a previous API compatibility mode.
 
 Logical Objects
 ---------------
 
-To use this API logical data objects must be defined for your application.  
+To use this API logical data objects must be defined for your application.
 These may be defined in the application spec template.
 
 For example you may have a logging application, where a logEntry has a date value and a list of measurements.
@@ -351,25 +380,25 @@ OR
 Extra
 -----
 
-This document is written in the markdown (.md) format.  
+This document is written in the markdown (.md) format.
 Using the dialects as supported by GitHub, Intellij IDEA and stackedit.io.
 
 HTTP(S)/1.1 is used and data errors are kept separate from communication errors.
 
-JSON (ECMA-404) is the data interchange format.  
-JSON API (http://jsonapi.org/) looks fairly sensible although probably not thoroughly conformed 
-to.  
+JSON (ECMA-404) is the data interchange format.
+JSON API (http://jsonapi.org/) looks fairly sensible although probably not thoroughly conformed
+to.
 JSON Schema (http://json-schema.org/) may also be of some interest although not currently used.
 
-Python 2.6 used for development (should then run on 2.6 - 3.3).  
-Web.py (http://webpy.org/) is currently used for the Python server implementation.  
-Requests is used for the Python client implementation.  
-Python unittest is used for both unit and functional tests.  
+Python 2.6 used for development (should then run on 2.6 - 3.3).
+Web.py (http://webpy.org/) is currently used for the Python server implementation.
+Requests is used for the Python client implementation.
+Python unittest is used for both unit and functional tests.
 Sqlite3 and MySQL are the databases used in the implementation examples.
 
 Git of course is the SCM.
 
-Project IDE files are IntelliJ IDEA (the free PyCharm or IDEA Ultimate with Python plugin).  
+Project IDE files are IntelliJ IDEA (the free PyCharm or IDEA Ultimate with Python plugin).
 Run configurations for server, client and tests are included.
 
 License
