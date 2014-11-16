@@ -73,9 +73,11 @@ This pattern would generally sync all objects in a class. With an arbitrary maxi
 
 UUIDs are not used to identify objects due to their size impact on the client. Instead the client generates a single UUID to identify itself to the server and sends it’s local id for each object thus allowing the server to identify duplicate new objects. Achieved by setting a unique constraint, see Server Schema.
 
-An anonymous base data download may be performed to pull any base data objects. All other requests require authentication by email and password against an account on the server.
+All requests require an application key to be provided in the query. This is a secret only known to the server and client. If not required the key may be set to an empty string ("") in both the server and client configurations.
 
-The client should probably perform a background sync on startup and a blocking/modal sync during operation with background on exit. The client may wish to perform a download phase on first start.
+An unauthenticated base data download may be performed to pull any base data objects. All other requests require authentication by email and password against an account on the server. The account open request uses the email and password to create and then authenticate an account.
+
+The client should probably perform a background sync on startup and a blocking/modal sync during operation with background on exit. The client may wish to perform a base data download on first start.
 
 **Base URL Example**
 https://api.app.example.com/
@@ -94,7 +96,7 @@ Method: POST
 
 *Example request URL:*
 
-    https://api.app.example.com/?type=test&email=user@example.com&password=secret
+    https://api.app.example.com/?type=test&key=private&email=user@example.com&password=secret
 
 *Example request body:*
 
@@ -113,8 +115,8 @@ Base Data Download Request
 
 **Summary** - Download base data objects for class.
 
-**Function** - A server may provide a set of base data for class. This request may be anonymous
-but requires the application key.
+**Function** - A server may provide a set of base data for an object class. This request does not
+require authentication (email and password). But does require the application key.
 
 **Request**
 Query: ?type=baseDataDown
@@ -123,7 +125,7 @@ Message Body: JSON object containing class, lastSync and clientUUID.
 
 *Example request URL:*
 
-    https://api.app.example.com/?type=baseDataDown&key=secret
+    https://api.app.example.com/?type=baseDataDown&key=private
 
 *Example request body:*
 
@@ -151,7 +153,7 @@ Message Body: JSON object containing class, lastSync and clientUUID.
 
 *Example request URL:*
 
-    https://api.app.example.com/?type=syncDown&email=user@example.com&password=secret
+    https://api.app.example.com/?type=syncDown&key=private&email=user@example.com&password=secret
 
 *Example request body:*
 
@@ -179,7 +181,7 @@ Message Body: JSON object containing class, clientUUID and objects.
 
 *Example request URL:*
 
-    https://api.app.example.com/?type=syncUp&email=user@example.com&password=secret
+    https://api.app.example.com/?type=syncUp&key=private&email=user@example.com&password=secret
 
 *Example request body:*
 
@@ -208,7 +210,7 @@ Message Body: JSON object containing data
 
 *Example request URL:*
 
-    https://api.app.example.com/?type=accountOpen&email=user@example.com&password=secret&key=secret
+    https://api.app.example.com/?type=accountOpen&key=private&email=user@example.com&password=secret
 
 *Example request body:*
 

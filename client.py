@@ -23,8 +23,9 @@ LOG = Logger(__file__)
 class Client(object):
     """A Tucker Sync Client Implementation."""
 
-    def __init__(self, base_url, email, password):
+    def __init__(self, base_url, key, email, password):
         self.base_url = base_url
+        self.key = key
         self.email = email
         self.password = password
         self.UUID = uuid.uuid4()
@@ -32,6 +33,7 @@ class Client(object):
 
     def check_connection(self):
         url = self.base_url + APIQuery.TEST
+        url += APIQuery.KEY + self.key
         url += APIQuery.EMAIL + self.email
         url += APIQuery.PASSWORD + self.password
         response = requests.post(url)

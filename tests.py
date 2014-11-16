@@ -56,11 +56,11 @@ class TestClient(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, 'user@example.com', 'secret')
+        return client.Client(base_url, 'private', 'user@example.com', 'secret')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
-        return client.Client(base_url, 'user@example.com', 'secret')
+        return client.Client(base_url, 'private', 'user@example.com', 'secret')
 
     @pytest.fixture(scope="function")
     def mock_response(self):
@@ -105,7 +105,7 @@ class TestIntegration(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, 'user@example.com', 'secret')
+        return client.Client(base_url, 'private', 'user@example.com', 'secret')
 
     def test_connection(self, client_a):
         """Test client's connection to server."""
@@ -118,11 +118,11 @@ class TestMultipleClientIntegration(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, 'user@example.com', 'secret')
+        return client.Client(base_url, 'private', 'user@example.com', 'secret')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
-        return client.Client(base_url, 'user@example.com', 'secret')
+        return client.Client(base_url, 'private', 'user@example.com', 'secret')
 
     def test_connection_with_sequential_clients(self, client_a, client_b):
         for x in xrange(8):
@@ -148,7 +148,7 @@ class TestMultipleClientIntegration(object):
 
         def run_client_c(q, url):
             r = True
-            client_c = client.Client(url, 'user@example.com', 'secret')
+            client_c = client.Client(url, 'private', 'user@example.com', 'secret')
             short_uuid = str(client_c.UUID)[:6]
             for x in xrange(8):
                 print 'client c, short UUID:', short_uuid

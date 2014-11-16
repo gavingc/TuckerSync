@@ -102,6 +102,7 @@ class APIQuery(object):
     SYNC_DOWN = "?type=syncDown"
     SYNC_UP = "?type=syncUp"
 
+    KEY = "&key="
     EMAIL = "&email="
     PASSWORD = "&password="
 

@@ -74,7 +74,7 @@ class Test(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        query = web.input(email=None, password=None)
+        query = web.input(key=None, email=None, password=None)
         Log.debug(self, 'query = %s' % query)
         return '{"error":0}'
 
