@@ -3,7 +3,7 @@
 """Test suite for the Tucker Sync algorithm, server and client.
 
 Usage:
-    ./test.py --help
+    ./tests.py --help
     or
     See main().
 
