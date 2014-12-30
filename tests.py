@@ -105,12 +105,102 @@ class TestIntegration(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, 'private', 'user@example.com', 'secret')
+        return client.Client(base_url,
+                             'private',
+                             str(uuid.uuid4()) + '@example.com',
+                             'secret78901234')
 
-    def test_connection(self, client_a):
-        """Test client's connection to server."""
+    @pytest.fixture(scope="class")
+    def client_b(self, base_url):
+        return client.Client(base_url,
+                             'private',
+                             str(uuid.uuid4()) + '@example.com',
+                             'secret78901234')
+
+    def test_connection_a(self, client_a):
+        """Test client_a's connection to server."""
         result = client_a.check_connection()
         assert True == result
+
+    def test_connection_b(self, client_b):
+        """Test client_b's connection to server."""
+        result = client_b.check_connection()
+        assert True == result
+
+    def test_account_open(self, client_a):
+        """Test opening an account."""
+        result = client_a.account_open()
+        assert True == result
+
+    def test_account_authentication(self, client_a):
+        """Test authentication of the account created above."""
+        result = client_a.check_authentication()
+        assert True == result
+
+    def test_account_authentication_wrong_password(self, client_a):
+        """Test authentication of the account created above with wrong password."""
+        saved_password = client_a.password
+        client_a.password = 'secret7890123'
+        result = client_a.check_authentication()
+        client_a.password = saved_password
+        assert False == result
+
+    def test_account_open_email_not_unique(self, client_a):
+        """Test opening an account with the same email as above."""
+        result = client_a.account_open()
+        assert False == result
+
+    def test_account_open_invalid_password_too_short(self, client_b):
+        """Test opening an account with a password that is too short."""
+        saved_password = client_b.password
+        client_b.password = 'secret7890123'
+        result = client_b.account_open()
+        client_b.password = saved_password
+        assert False == result
+
+    def test_account_open_invalid_email_syntax(self, client_b):
+        """Test opening an account with an invalid email syntax."""
+        saved_email = client_b.email
+        client_b.email = str(uuid.uuid4()) + 'example.com'
+        result = client_b.account_open()
+        client_b.email = saved_email
+        assert False == result
+
+    def test_account_modify(self, client_a):
+        """Test modifying the account created by client_a."""
+        result = client_a.account_modify()
+        assert True == result
+
+    def test_account_modify_invalid_password(self, client_a):
+        """Test modifying an account with invalid password."""
+        saved_password = client_a.password
+        client_a.password = 'secret7890123'
+        result = client_a.account_modify()
+        client_a.password = saved_password
+        assert False == result
+
+    def test_account_modify_email_with_no_account(self, client_b):
+        """Test modifying an account with an email that does not have an account."""
+        result = client_b.account_modify()
+        assert False == result
+
+    def test_account_close_wrong_password(self, client_a):
+        """Test closing of the account created above with wrong password."""
+        saved_password = client_a.password
+        client_a.password = 'secret7890123'
+        result = client_a.account_close()
+        client_a.password = saved_password
+        assert False == result
+
+    def test_account_close(self, client_a):
+        """Test closing an account."""
+        result = client_a.account_close()
+        assert True == result
+
+    def test_account_authentication_closed_account(self, client_a):
+        """Test authentication of the account closed above."""
+        result = client_a.check_authentication()
+        assert False == result
 
 
 class TestMultipleClientIntegration(object):

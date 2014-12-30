@@ -101,6 +101,9 @@ class APIQuery(object):
     BASE_DATA_DOWN = "?type=baseDataDown"
     SYNC_DOWN = "?type=syncDown"
     SYNC_UP = "?type=syncUp"
+    ACCOUNT_OPEN = "?type=accountOpen"
+    ACCOUNT_CLOSE = "?type=accountClose"
+    ACCOUNT_MODIFY = "?type=accountModify"
 
     KEY = "&key="
     EMAIL = "&email="
