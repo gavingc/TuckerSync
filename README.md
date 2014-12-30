@@ -79,7 +79,7 @@ An unauthenticated base data download may be performed to pull any base data obj
 
 The client should probably perform a background sync on startup and a blocking/modal sync during operation with background on exit. The client may wish to perform a base data download on first start.
 
-**Base URL Example**
+**Base URL Example**  
 https://api.app.example.com/  
 (Use a .htaccess rewrite rule with index.php)  
 
@@ -102,7 +102,7 @@ Method: POST
 
     {"data":{}}
 
-**Response**
+**Response**  
 Message Body: JSON object containing error code.
 
 *Example response code:* 200  
@@ -130,7 +130,7 @@ Message Body: JSON object containing class, lastSync and clientUUID.
 
     {"class":"product","clientUUID":"UUID","lastSync":123}
 
-**Response**
+**Response**  
 Message Body: JSON object containing error and objects.
 
 *Example response code:* 200  
@@ -145,7 +145,7 @@ Sync Download Request
 
 **Function** - Sync logical data objects between client and server for backup, replication and sharing purposes.
 
-**Request**
+**Request**  
 Query: ?type=syncDown  
 Method: POST  
 Message Body: JSON object containing class, lastSync and clientUUID.  
@@ -158,7 +158,7 @@ Message Body: JSON object containing class, lastSync and clientUUID.
 
     {"class":"product","clientUUID":"UUID","lastSync":123}
 
-**Response**
+**Response**  
 Message Body: JSON object containing error and objects.
 
 *Example response code:* 200  
@@ -173,7 +173,7 @@ Sync Upload Request
 
 **Function** - Sync logical data objects between client and server for backup, replication and sharing purposes.
 
-**Request**
+**Request**  
 Query: ?type=syncUp  
 Method: POST  
 Message Body: JSON object containing class, clientUUID and objects.
@@ -186,7 +186,7 @@ Message Body: JSON object containing class, clientUUID and objects.
 
     {"class":"product","clientUUID":"UUID","objects":[{"serverObjectId":0},{"serverObjectId":n}]}
 
-**Response**
+**Response**  
 Message Body: JSON object containing error and objects.
 
 *Example response code:* 200  
@@ -201,7 +201,7 @@ Account Requests
 
 **Function** - The account open request will use the query email and password to create an account on the server, additional account data may be placed in the request body. The account close and modify requests will use the query email and password for authentication. The account modify must supply the changed values in the request body.
 
-**Request**
+**Request**  
 Query: ?type=accountOpen | accountClose | accountModify  
 Method : POST  
 Message Body: JSON object containing data  
@@ -214,7 +214,7 @@ Message Body: JSON object containing data
 
     {"data":{}}
 
-**Response**
+**Response**  
 Message Body: JSON object containing error and data.
 
 *Example response code:* 200  
@@ -277,7 +277,7 @@ Required on each object class to be synced:
 
 id - server object id.  
 userId - required on each object?  
-clientId - the unique client id that created the object.   
+clientId - the unique client id that created the object.  
 clientObjectId - the object id from the client that created the object.  
 last_sync - long value, 0 if not synced yet, determined by server and then recorded locally by client.  
 
@@ -285,12 +285,12 @@ The clientId and clientObjectId together form a unique constraint. Allowing the 
 
     unique index `uniqueObjectConstraint` (`clientId`,`clientObjectId`)
 
-**Client**
+**Client**  
 id - identifier.  
 userId - which user does this client belong to.  
 UUID - client supplied UUID.  
 
-**User**
+**User**  
 id - identifier.  
 email - acts as username.  
 password - standard salted and encrypted.  
