@@ -232,16 +232,15 @@ PHP:
     class Errors
     {
         const SUCCESS = 0;
-        const UNKNOWN = 1;
+        const INTERNAL_SERVER_ERROR = 1;
         const MALFORMED_REQUEST = 2;
-        const DATABASE_CONNECTION_ERROR = 3;
-        const DATABASE_FILE_NOT_EXIST = 4;
-        const DATABASE_INSERTION_FAILED = 5;
-        const DATABASE_UPDATE_FAILED = 6;
-        const DATABASE_DELETE_FAILED = 7;
-        const INVALID_JSON_STRING_PROVIDED = 8;
-        const CAN_NOT_OPEN_JSON_FILE = 9;
-        const FULL_SYNC_REQUIRED = 10;
+        const INVALID_KEY = 3;
+        const INVALID_EMAIL = 4;
+        const INVALID_PASSWORD = 5;
+        const AUTH_FAIL = 6;
+        const INVALID_JSON_OBJECT = 7;
+        const EMAIL_NOT_UNIQUE = 8;
+        const FULL_SYNC_REQUIRED = 9;
     }
 
 Use Cases

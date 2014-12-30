@@ -119,8 +119,15 @@ class APIErrorCode(object):
     """The API error code constants."""
 
     SUCCESS = 0
-    UNKNOWN = 1
-    FULL_SYNC_REQUIRED = 10
+    INTERNAL_SERVER_ERROR = 1
+    MALFORMED_REQUEST = 2
+    INVALID_KEY = 3
+    INVALID_EMAIL = 4
+    INVALID_PASSWORD = 5
+    AUTH_FAIL = 6
+    INVALID_JSON_OBJECT = 7
+    EMAIL_NOT_UNIQUE = 8
+    FULL_SYNC_REQUIRED = 9
 
 
 class HTTP(object):
