@@ -117,7 +117,7 @@ Base Data Download Request
 
 **Function** - A server may provide a set of base data for an object class. This request does not require authentication (email and password). But does require the application key.
 
-**Request**
+**Request**  
 Query: ?type=baseDataDown  
 Method: POST  
 Message Body: JSON object containing class, lastSync and clientUUID.
@@ -203,7 +203,7 @@ Account Requests
 
 **Request**  
 Query: ?type=accountOpen | accountClose | accountModify  
-Method : POST  
+Method: POST  
 Message Body: JSON object containing data  
 
 *Example request URL:*
