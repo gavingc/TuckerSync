@@ -11,6 +11,8 @@ import inspect
 import json
 import logging
 import os
+from schematics.models import Model
+from schematics.types import StringType
 
 
 class Logger(object):
@@ -94,28 +96,24 @@ class Logger(object):
 #LOG = Logger(__file__)
 
 
-class APIQuery(object):
-    """The API query constants."""
+class APIRequestType(object):
+    """The API request constants."""
 
-    TEST = "?type=test"
-    BASE_DATA_DOWN = "?type=baseDataDown"
-    SYNC_DOWN = "?type=syncDown"
-    SYNC_UP = "?type=syncUp"
-    ACCOUNT_OPEN = "?type=accountOpen"
-    ACCOUNT_CLOSE = "?type=accountClose"
-    ACCOUNT_MODIFY = "?type=accountModify"
-
-    KEY = "&key="
-    EMAIL = "&email="
-    PASSWORD = "&password="
+    TEST = 'test'
+    BASE_DATA_DOWN = 'baseDataDown'
+    SYNC_DOWN = 'syncDown'
+    SYNC_UP = 'syncUp'
+    ACCOUNT_OPEN = 'accountOpen'
+    ACCOUNT_CLOSE = 'accountClose'
+    ACCOUNT_MODIFY = 'accountModify'
 
 
 class JSONKey(object):
     """The JSON key constants."""
 
-    ERROR = "error"
-    DATA = "data"
-    OBJECTS = "objects"
+    ERROR = 'error'
+    DATA = 'data'
+    OBJECTS = 'objects'
 
 
 class APIErrorCode(object):
@@ -131,6 +129,21 @@ class APIErrorCode(object):
     INVALID_JSON_OBJECT = 7
     EMAIL_NOT_UNIQUE = 8
     FULL_SYNC_REQUIRED = 9
+
+
+class APIErrorResponse(object):
+    """The API error response constants."""
+
+    SUCCESS = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.SUCCESS)
+    INTERNAL_SERVER_ERROR = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INTERNAL_SERVER_ERROR)
+    MALFORMED_REQUEST = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.MALFORMED_REQUEST)
+    INVALID_KEY = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INVALID_KEY)
+    INVALID_EMAIL = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INVALID_EMAIL)
+    INVALID_PASSWORD = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INVALID_PASSWORD)
+    AUTH_FAIL = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.AUTH_FAIL)
+    INVALID_JSON_OBJECT = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INVALID_JSON_OBJECT)
+    EMAIL_NOT_UNIQUE = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.EMAIL_NOT_UNIQUE)
+    FULL_SYNC_REQUIRED = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.FULL_SYNC_REQUIRED)
 
 
 class HTTP(object):
@@ -158,3 +171,22 @@ class JSON(object):
     def load(fp):
         """Load (read) a file like object and return a Python native json object."""
         return json.load(fp)
+
+
+class APIURL(Model):
+    """API URL Model."""
+
+    URL_FORMAT = '%(base_url)s' \
+                 '?type=%(type)s' \
+                 '&key=%(key)s' \
+                 '&email=%(email)s' \
+                 '&password=%(password)s'
+
+    base_url = StringType()
+    type = StringType()
+    key = StringType()
+    email = StringType()
+    password = StringType()
+
+    def get_url_string(self):
+        return APIURL.URL_FORMAT % self.to_native()

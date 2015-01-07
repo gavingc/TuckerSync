@@ -21,7 +21,7 @@ import uuid
 from flexmock import flexmock
 
 import client
-from common import APIQuery, HTTP, JSON
+from common import APIRequestType, HTTP, JSON, APIURL
 
 
 class TestServer(object):
@@ -30,24 +30,36 @@ class TestServer(object):
     base_url is a test fixture defined in conftest.py
     """
 
-    def test_get_server_root(self, base_url):
+    @pytest.fixture
+    def url(self, base_url):
+        url = APIURL()
+        url.base_url = base_url
+        url.type = APIRequestType.TEST
+        url.key = 'private'
+        url.email = 'user@example.com'
+        url.password = 'secret'
+        return url
+
+    def test_get_server_root(self, url):
         """Test server 'root'."""
-        response = requests.get(base_url)
+        response = requests.get(url.base_url)
         assert HTTP.OK == response.status_code
 
-    def test_post_server_test_function(self, base_url):
+    def test_post_server_test_function(self, url):
         """Test server 'test' function."""
-        response = requests.post(base_url + APIQuery.TEST)
+        response = requests.post(url.get_url_string())
         assert HTTP.OK == response.status_code
 
-    def test_post_server_sync_down_function(self, base_url):
+    def test_post_server_sync_down_function(self, url):
         """Test server 'syncDown' function."""
-        response = requests.post(base_url + APIQuery.SYNC_DOWN)
+        url.type = APIRequestType.SYNC_DOWN
+        response = requests.post(url.get_url_string())
         assert HTTP.OK == response.status_code
 
-    def test_post_server_sync_up_function(self, base_url):
+    def test_post_server_sync_up_function(self, url):
         """Test server 'syncUp' function."""
-        response = requests.post(base_url + APIQuery.SYNC_UP)
+        url.type = APIRequestType.SYNC_UP
+        response = requests.post(url.get_url_string())
         assert HTTP.OK == response.status_code
 
 

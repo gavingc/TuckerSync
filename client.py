@@ -15,7 +15,7 @@ Copyright:
 import requests
 import uuid
 
-from common import APIQuery, JSONKey, APIErrorCode, HTTP, JSON, Logger
+from common import APIRequestType, JSONKey, APIErrorCode, HTTP, JSON, Logger, APIURL
 
 LOG = Logger(__file__)
 
@@ -34,7 +34,7 @@ class Client(object):
     def check_connection(self):
         """Check the connection to the server and that it responds with an API error code."""
         try:
-            self.post_request(APIQuery.TEST)
+            self.post_request(APIRequestType.TEST)
         except ClientException:
             LOG.debug(self, 'Check connection failed with an exception.')
             return False
@@ -45,7 +45,7 @@ class Client(object):
     def check_authentication(self):
         """Check that authentication against an account on the server succeeds."""
         try:
-            jo = self.post_request(APIQuery.TEST)
+            jo = self.post_request(APIRequestType.TEST)
         except ClientException:
             LOG.debug(self, 'Check authentication failed with an exception.')
             return False
@@ -62,7 +62,7 @@ class Client(object):
     def account_open(self):
         """Open a new account on the server."""
         try:
-            jo = self.post_request(APIQuery.ACCOUNT_OPEN)
+            jo = self.post_request(APIRequestType.ACCOUNT_OPEN)
         except ClientException:
             LOG.debug(self, 'Account open failed with an exception.')
             return False
@@ -79,7 +79,7 @@ class Client(object):
     def account_close(self):
         """Close an existing account on the server."""
         try:
-            jo = self.post_request(APIQuery.ACCOUNT_CLOSE)
+            jo = self.post_request(APIRequestType.ACCOUNT_CLOSE)
         except ClientException:
             LOG.debug(self, 'Account close failed with an exception.')
             return False
@@ -96,7 +96,7 @@ class Client(object):
     def account_modify(self):
         """Modify an existing account on the server."""
         try:
-            jo = self.post_request(APIQuery.ACCOUNT_MODIFY)
+            jo = self.post_request(APIRequestType.ACCOUNT_MODIFY)
         except ClientException:
             LOG.debug(self, 'Account modify failed with an exception.')
             return False
@@ -110,17 +110,15 @@ class Client(object):
         # Success
         return True
 
-    def post_request(self, api_query):
+    def post_request(self, api_request_type, data=None):
         """Post the request and return the json object (Python dictionary) or raise an exception."""
-        url = self.base_url + api_query
-        url += APIQuery.KEY + self.key
-        url += APIQuery.EMAIL + self.email
-        url += APIQuery.PASSWORD + self.password
 
-        LOG.debug(self, 'url = %s', url)
+        url_string = self.get_url_string(api_request_type)
+
+        LOG.debug(self, 'url = %s', url_string)
 
         try:
-            response = requests.post(url)
+            response = requests.post(url_string, data)
         except Exception as e:
             LOG.debug(self, 'Request post failed with exception = %s', e)
             raise ClientException
@@ -160,6 +158,16 @@ class Client(object):
 
         # Success.
         return jo
+
+    def get_url_string(self, api_request_type):
+        """Construct a url string from this clients settings."""
+        url = APIURL()
+        url.base_url = self.base_url
+        url.type = api_request_type
+        url.key = self.key
+        url.email = self.email
+        url.password = self.password
+        return url.get_url_string()
 
 
 class ClientException(Exception):
