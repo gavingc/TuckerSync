@@ -90,7 +90,7 @@ Test Request
 
 **Function** - The test function will perform some basic availability tests on the server and reply with the appropriate error value. The client should inspect the API error code to determine that the server is available and functioning correctly. This call can be useful when first contacting the server, or after a failed communication to check the server before trying again. The matching API error code will be returned to indicate whether authentication succeeded or not and thus both connection and authentication can be checked separately.
 
-**Request**
+**Request**  
 Query: ?type=test  
 Method: POST  
 
