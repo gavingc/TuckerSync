@@ -43,8 +43,8 @@ Download Phase
 For each object class:
 
  - The **client** requests new and changed objects since last_sync:
-     - SELECT last_sync FROM class ORDER BY last_sync DESC LIMIT 1;
- - The **server** returns objects, for class, and user where (lastSync > last_sync).
+     - SELECT last_sync FROM object_class ORDER BY last_sync DESC LIMIT 1;
+ - The **server** returns objects, for object_class and user where (lastSync > last_sync).
  - For each object returned the **client**:
      - Inserts or updates the object based on server_object_id.
      - Using all of the server provided values and setting local_changes=0.
@@ -120,7 +120,7 @@ Base Data Download Request
 **Request**  
 Query: ?type=baseDataDown  
 Method: POST  
-Message Body: JSON object containing class, lastSync and clientUUID.
+Message Body: JSON object containing objectClass, lastSync and clientUUID.
 
 *Example request URL:*
 
@@ -128,7 +128,7 @@ Message Body: JSON object containing class, lastSync and clientUUID.
 
 *Example request body:*
 
-    {"class":"product","clientUUID":"UUID","lastSync":123}
+    {"objectClass":"product","clientUUID":"UUID","lastSync":123}
 
 **Response**  
 Message Body: JSON object containing error and objects.
@@ -148,7 +148,7 @@ Sync Download Request
 **Request**  
 Query: ?type=syncDown  
 Method: POST  
-Message Body: JSON object containing class, lastSync and clientUUID.  
+Message Body: JSON object containing objectClass, lastSync and clientUUID.  
 
 *Example request URL:*
 
@@ -156,7 +156,7 @@ Message Body: JSON object containing class, lastSync and clientUUID.
 
 *Example request body:*
 
-    {"class":"product","clientUUID":"UUID","lastSync":123}
+    {"objectClass":"product","clientUUID":"UUID","lastSync":123}
 
 **Response**  
 Message Body: JSON object containing error and objects.
@@ -169,14 +169,14 @@ Message Body: JSON object containing error and objects.
 Sync Upload Request
 -------------------
 
-**Summary** - Synchronise objects for class.
+**Summary** - Synchronise objects for an object class.
 
 **Function** - Sync logical data objects between client and server for backup, replication and sharing purposes.
 
 **Request**  
 Query: ?type=syncUp  
 Method: POST  
-Message Body: JSON object containing class, clientUUID and objects.
+Message Body: JSON object containing objectClass, clientUUID and objects.
 
 *Example request URL:*
 
@@ -184,7 +184,7 @@ Message Body: JSON object containing class, clientUUID and objects.
 
 *Example request body:*
 
-    {"class":"product","clientUUID":"UUID","objects":[{"serverObjectId":0},{"serverObjectId":n}]}
+    {"objectClass":"product","clientUUID":"UUID","objects":[{"serverObjectId":0},{"serverObjectId":n}]}
 
 **Response**  
 Message Body: JSON object containing error and objects.
