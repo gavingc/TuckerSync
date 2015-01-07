@@ -12,7 +12,7 @@ import json
 import logging
 import os
 from schematics.models import Model
-from schematics.types import StringType
+from schematics.types import StringType, IntType, BaseType
 
 
 class Logger(object):
@@ -190,3 +190,39 @@ class APIURL(Model):
 
     def get_url_string(self):
         return APIURL.URL_FORMAT % self.to_native()
+
+
+class SyncDownRequestBody(Model):
+    """Sync download request body model."""
+
+    objectClass = StringType()
+    clientUUID = StringType()
+    lastSync = IntType(default=0)
+
+
+class BaseDataDownRequestBody(SyncDownRequestBody):
+    """Base data download request body model."""
+
+    pass
+
+
+class SyncUpRequestBody(Model):
+    """Sync upload request body model."""
+
+    objectClass = StringType()
+    clientUUID = IntType()
+    objects = BaseType(serialize_when_none=False)
+
+
+class AccountModifyRequestBody(Model):
+    """Account modify request body model."""
+
+    email = StringType()
+    password = IntType()
+
+
+class ResponseBody(Model):
+    """Response body model."""
+
+    error = IntType(default=0)
+    objects = BaseType(serialize_when_none=False)
