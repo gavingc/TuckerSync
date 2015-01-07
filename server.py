@@ -14,15 +14,19 @@ Copyright:
 
 import sys
 import logging
-from common import JSON
+from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType
 import web
 
 urls = (
     '/', 'Index',
     '/(.*)/', 'Redirect',
-    '/test', 'Test',
+    '/test/(.*)', 'Test',
+    '/baseDataDown/(.*)', 'BaseDataDown',
     '/syncDown/(.*)', 'SyncDown',
-    '/syncUp/(.*)', 'SyncUp'
+    '/syncUp/(.*)', 'SyncUp',
+    '/accountOpen/(.*)', 'AccountOpen',
+    '/accountClose/(.*)', 'AccountClose',
+    '/accountModify/(.*)', 'AccountModify'
 )
 
 
@@ -42,12 +46,25 @@ class Index(object):
         query = web.input(type=None)
         Log.debug(self, 'query = %s' % query)
 
-        if query.type == 'test':
+        if query.type is None:
+            return APIErrorResponse.MALFORMED_REQUEST
+        if query.type == APIRequestType.TEST:
             return Test().POST()
-        if query.type == 'syncDown':
+        if query.type == APIRequestType.BASE_DATA_DOWN:
+            return BaseDataDown().POST()
+        if query.type == APIRequestType.SYNC_DOWN:
             return SyncDown().POST('product')
-        if query.type == 'syncUp':
+        if query.type == APIRequestType.SYNC_UP:
             return SyncUp().POST('product')
+        if query.type == APIRequestType.ACCOUNT_OPEN:
+            return AccountOpen().POST('product')
+        if query.type == APIRequestType.ACCOUNT_CLOSE:
+            return AccountClose().POST('product')
+        if query.type == APIRequestType.ACCOUNT_MODIFY:
+            return AccountModify().POST('product')
+
+        # No matching request type found.
+        return APIErrorResponse.MALFORMED_REQUEST
 
 
 class Redirect(object):
@@ -76,11 +93,22 @@ class Test(object):
 
         query = web.input(key=None, email=None, password=None)
         Log.debug(self, 'query = %s' % query)
-        return '{"error":0}'
+        return APIErrorResponse.SUCCESS
+
+
+class BaseDataDown(object):
+    """Base Data Download request handler."""
+
+    def POST(self):
+        Log.debug(self, 'POST')
+
+        objects = []
+
+        return Packetizer.packResponse(APIErrorCode.SUCCESS, objects)
 
 
 class SyncDown(object):
-    """Sync Download Phase API handler."""
+    """Sync Download request handler."""
 
     def POST(self, object_class):
         Log.debug(self, 'POST')
@@ -94,7 +122,7 @@ class SyncDown(object):
 
 
 class SyncUp(object):
-    """Sync Upload Phase API handler."""
+    """Sync Upload request handler."""
 
     def POST(self, object_class):
         Log.debug(self, 'POST')
@@ -106,11 +134,44 @@ class SyncUp(object):
         return body
 
 
+class AccountOpen(object):
+    """Account Open request handler."""
+
+    def POST(self, object_class):
+        Log.debug(self, 'POST')
+        Log.debug(self, 'object_class = %s' % object_class)
+
+        return APIErrorResponse.SUCCESS
+
+
+class AccountClose(object):
+    """Account Close request handler."""
+
+    def POST(self, object_class):
+        Log.debug(self, 'POST')
+        Log.debug(self, 'object_class = %s' % object_class)
+
+        return APIErrorResponse.SUCCESS
+
+
+class AccountModify(object):
+    """Account Modify request handler."""
+
+    def POST(self, object_class):
+        Log.debug(self, 'POST')
+        Log.debug(self, 'object_class = %s' % object_class)
+
+        js = web.data()
+        Log.debug(self, 'js = %s' % js)
+
+        return APIErrorResponse.SUCCESS
+
+
 class Log(object):
     """Custom (light) logger wrapper.
 
     Includes the module name and calling class name in the output.
-    Lazily initialised with the module name the first time Log is called.
+    Lazily initialised with this module name the first time Log is called.
 
     Usage:
         Log.debug(self, 'value = %s' % value)
@@ -123,6 +184,32 @@ class Log(object):
     @staticmethod
     def debug(obj, arg):
         Log.logger.debug('%s:%s', obj.__class__.__name__, arg)
+
+
+class Packetizer(object):
+    """Pack error code and any objects into a json string."""
+
+    @staticmethod
+    def packResponse(error, objects=None):
+        """Pack error code and any objects into the response body. Return a json string."""
+        rb = ResponseBody()
+        rb.error = error
+        rb.objects = objects
+
+        # Validate before conversion.
+        try:
+            rb.validate()
+        except Exception as e:
+            Log.debug(Packetizer, 'Validate exception = %s' % e)
+            return APIErrorResponse.INTERNAL_SERVER_ERROR
+
+        try:
+            js = JSON.dumps(rb.to_primitive())
+        except Exception as e:
+            Log.debug(Packetizer, 'JSON dumps exception = %s' % e)
+            return APIErrorResponse.INTERNAL_SERVER_ERROR
+
+        return js
 
 
 def main():
