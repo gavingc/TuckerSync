@@ -117,8 +117,13 @@ class Client(object):
 
         LOG.debug(self, 'url = %s', url_string)
 
+        headers = {'Accept': 'application/json'}
+
+        if data:
+            headers['Content-Type'] = 'application/json'
+
         try:
-            response = requests.post(url_string, data)
+            response = requests.post(url_string, data, headers=headers)
         except Exception as e:
             LOG.debug(self, 'Request post failed with exception = %s', e)
             raise ClientException

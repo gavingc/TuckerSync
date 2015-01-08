@@ -152,6 +152,9 @@ class HTTP(object):
     OK = 200
 
 
+CONTENT_TYPE_APP_JSON = 'application/json'
+
+
 class JSON(object):
     """Custom json wrapper."""
 

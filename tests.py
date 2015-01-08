@@ -21,7 +21,7 @@ import uuid
 from flexmock import flexmock
 
 import client
-from common import APIRequestType, HTTP, JSON, APIURL
+from common import APIRequestType, HTTP, JSON, APIURL, APIErrorResponse
 
 
 class TestServer(object):
@@ -40,6 +40,11 @@ class TestServer(object):
         url.password = 'secret'
         return url
 
+    @pytest.fixture(scope="class")
+    def headers(self):
+        return {'Accept': 'application/json',
+                'Content-Type': 'application/json'}
+
     def test_get_server_root(self, url):
         """Test server 'root'."""
         response = requests.get(url.base_url)
@@ -49,18 +54,35 @@ class TestServer(object):
         """Test server 'test' function."""
         response = requests.post(url.get_url_string())
         assert HTTP.OK == response.status_code
+        # assert APIErrorResponse.AUTH_FAIL == response.content
 
-    def test_post_server_sync_down_function(self, url):
+    def test_post_server_sync_down_function(self, url, headers):
+        """Test server 'syncDown' function."""
+        url.type = APIRequestType.SYNC_DOWN
+        response = requests.post(url.get_url_string(), headers=headers)
+        assert HTTP.OK == response.status_code
+        # assert APIErrorResponse.SUCCESS == response.content
+
+    def test_post_server_sync_down_function_without_headers(self, url):
         """Test server 'syncDown' function."""
         url.type = APIRequestType.SYNC_DOWN
         response = requests.post(url.get_url_string())
         assert HTTP.OK == response.status_code
+        assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_server_sync_up_function(self, url):
+    def test_post_server_sync_up_function(self, url, headers):
+        """Test server 'syncUp' function."""
+        url.type = APIRequestType.SYNC_UP
+        response = requests.post(url.get_url_string(), headers=headers)
+        assert HTTP.OK == response.status_code
+        # assert APIErrorResponse.MALFORMED_REQUEST == response.content
+
+    def test_post_server_sync_up_function_without_headers(self, url):
         """Test server 'syncUp' function."""
         url.type = APIRequestType.SYNC_UP
         response = requests.post(url.get_url_string())
         assert HTTP.OK == response.status_code
+        assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
 
 class TestClient(object):

@@ -12,9 +12,11 @@ Copyright:
     Copyright (c) 2014 Steven Tucker and Gavin Kromhout.
 """
 
+import os
 import sys
 import logging
-from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType
+from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
+    CONTENT_TYPE_APP_JSON
 import web
 
 urls = (
@@ -102,6 +104,9 @@ class BaseDataDown(object):
     def POST(self):
         Log.debug(self, 'POST')
 
+        if not check_content_type():
+            return APIErrorResponse.MALFORMED_REQUEST
+
         objects = []
 
         return Packetizer.packResponse(APIErrorCode.SUCCESS, objects)
@@ -113,6 +118,9 @@ class SyncDown(object):
     def POST(self, object_class):
         Log.debug(self, 'POST')
         Log.debug(self, 'object_class = %s' % object_class)
+
+        if not check_content_type():
+            return APIErrorResponse.MALFORMED_REQUEST
 
         with open('data.json') as f:
             jo = JSON.load(f)
@@ -127,6 +135,9 @@ class SyncUp(object):
     def POST(self, object_class):
         Log.debug(self, 'POST')
         Log.debug(self, 'object_class = %s' % object_class)
+
+        if not check_content_type():
+            return APIErrorResponse.MALFORMED_REQUEST
 
         body = '{ "error":0, ' \
                '"objects":[{"serverObjectId":1, "lastSync":125}, {"serverObjectId":n}] }'
@@ -161,6 +172,9 @@ class AccountModify(object):
         Log.debug(self, 'POST')
         Log.debug(self, 'object_class = %s' % object_class)
 
+        if not check_content_type():
+            return APIErrorResponse.MALFORMED_REQUEST
+
         js = web.data()
         Log.debug(self, 'js = %s' % js)
 
@@ -170,15 +184,16 @@ class AccountModify(object):
 class Log(object):
     """Custom (light) logger wrapper.
 
-    Includes the module name and calling class name in the output.
-    Lazily initialised with this module name the first time Log is called.
+    Includes the module (file) name and calling class name in the output.
+    Lazily initialised with this module (file) name the first time Log is called.
 
     Usage:
         Log.debug(self, 'value = %s' % value)
+        Log.logger.debug('Accessing logger directly.')
     """
 
     # Module logger.
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(os.path.basename(__file__).split('.')[0])
     logger.debug('Log:init.')
 
     @staticmethod
@@ -210,6 +225,22 @@ class Packetizer(object):
             return APIErrorResponse.INTERNAL_SERVER_ERROR
 
         return js
+
+
+def check_content_type():
+    """Content-Type check returns True if Content-Type is correct, False otherwise."""
+
+    Log.logger.debug('check_content_type')
+
+    content_type = web.ctx.env.get('CONTENT_TYPE')
+    Log.logger.debug('Content-Type = %s' % content_type)
+
+    if content_type != CONTENT_TYPE_APP_JSON:
+        Log.logger.debug('Check Fail, Content-Type != %s' % CONTENT_TYPE_APP_JSON)
+        return False
+
+    # Success.
+    return True
 
 
 def main():
