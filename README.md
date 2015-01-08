@@ -100,7 +100,7 @@ Method: POST
 
 *Example request body:*
 
-    {"data":{}}
+    None
 
 **Response**  
 Message Body: JSON object containing error code.
@@ -212,7 +212,9 @@ Message Body: JSON object containing data
 
 *Example request body:*
 
-    {"data":{}}
+accountModify:
+
+    {"email":"new_user@example.com","password":"new_password"}
 
 **Response**  
 Message Body: JSON object containing error and data.
@@ -220,7 +222,7 @@ Message Body: JSON object containing error and data.
 *Example response code:* 200  
 *Example response body:*  
 
-    {"error":0,"data":{}}
+    {"error":0}
 
 Errors
 ------
