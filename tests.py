@@ -24,6 +24,15 @@ import client
 from common import APIRequestType, HTTP, JSON, APIURL, APIErrorResponse
 
 
+class TestCommon(object):
+    """Common unit tests."""
+
+    def test_api_error_response(self):
+        assert '{"error":0}' == APIErrorResponse.SUCCESS
+        assert '{"error":1}' == APIErrorResponse.INTERNAL_SERVER_ERROR
+        assert '{"error":2}' == APIErrorResponse.MALFORMED_REQUEST
+
+
 class TestServer(object):
     """Server functional tests.
 
