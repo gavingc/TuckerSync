@@ -200,31 +200,76 @@ class TestIntegration(object):
         client_b.email = saved_email
         assert False == result
 
-    def test_account_modify(self, client_a):
-        """Test modifying the account created by client_a."""
-        result = client_a.account_modify()
+    def test_account_modify_password(self, client_a):
+        """Test modifying the account password created by client_a."""
+        new_password = 'secret78901235'
+        result = client_a.account_modify(client_a.email, new_password)
+        client_a.password = new_password
         assert True == result
 
-    def test_account_modify_invalid_password(self, client_a):
-        """Test modifying an account with invalid password."""
+    def test_account_authentication_changed_password(self, client_a):
+        """Test authentication of the account modified above."""
+        result = client_a.check_authentication()
+        assert True == result
+
+    def test_account_modify_email(self, client_a):
+        """Test modifying the account email created by client_a."""
+        new_email = str(uuid.uuid4()) + '@example.com'
+        result = client_a.account_modify(new_email, client_a.password)
+        client_a.email = new_email
+        assert True == result
+
+    def test_account_authentication_changed_email(self, client_a):
+        """Test authentication of the account modified above."""
+        result = client_a.check_authentication()
+        assert True == result
+
+    def test_account_modify_password_and_email(self, client_a):
+        """Test modifying the account created by client_a."""
+        new_password = 'secret78901236'
+        new_email = str(uuid.uuid4()) + '@example.com'
+        result = client_a.account_modify(new_email, new_password)
+        client_a.password = new_password
+        client_a.email = new_email
+        assert True == result
+
+    def test_account_authentication_changed_password_and_email(self, client_a):
+        """Test authentication of the account modified above."""
+        result = client_a.check_authentication()
+        assert True == result
+
+    def test_account_modify_wrong_password(self, client_a):
+        """Test modify of the account created above with wrong password."""
+        new_password = 'secret78901238'
+        new_email = str(uuid.uuid4()) + '@example.com'
         saved_password = client_a.password
-        client_a.password = 'secret7890123'
-        result = client_a.account_modify()
+        client_a.password = 'secret78901237'  # set wrong password
+        result = client_a.account_modify(new_email, new_password)
         client_a.password = saved_password
         assert False == result
+
+    def test_account_authentication_unchanged_password_and_email(self, client_a):
+        """Test authentication of the unchanged account above."""
+        result = client_a.check_authentication()
+        assert True == result
 
     def test_account_modify_email_with_no_account(self, client_b):
         """Test modifying an account with an email that does not have an account."""
-        result = client_b.account_modify()
+        result = client_b.account_modify(client_b.email, client_b.password)
         assert False == result
 
     def test_account_close_wrong_password(self, client_a):
-        """Test closing of the account created above with wrong password."""
+        """Test closing of the account created by client_a with wrong password."""
         saved_password = client_a.password
-        client_a.password = 'secret7890123'
+        client_a.password = 'secret78901237'  # set wrong password
         result = client_a.account_close()
         client_a.password = saved_password
         assert False == result
+
+    def test_account_authentication_unclosed_account(self, client_a):
+        """Test authentication of the unclosed account above."""
+        result = client_a.check_authentication()
+        assert True == result
 
     def test_account_close(self, client_a):
         """Test closing an account."""

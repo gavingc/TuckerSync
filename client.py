@@ -15,7 +15,8 @@ Copyright:
 import requests
 import uuid
 
-from common import APIRequestType, JSONKey, APIErrorCode, HTTP, JSON, Logger, APIURL
+from common import APIRequestType, JSONKey, APIErrorCode, HTTP, JSON, Logger, APIURL, \
+    AccountModifyRequestBody
 
 LOG = Logger(__file__)
 
@@ -93,10 +94,20 @@ class Client(object):
         # Success
         return True
 
-    def account_modify(self):
+    def account_modify(self, new_email, new_password):
         """Modify an existing account on the server."""
+        request_body = AccountModifyRequestBody()
+        request_body.email = new_email
+        request_body.password = new_password
+
         try:
-            jo = self.post_request(APIRequestType.ACCOUNT_MODIFY)
+            js = self.get_json_request_string(request_body)
+        except ClientException:
+            LOG.debug(self, 'Account modify failed with an exception.')
+            return False
+
+        try:
+            jo = self.post_request(APIRequestType.ACCOUNT_MODIFY, js)
         except ClientException:
             LOG.debug(self, 'Account modify failed with an exception.')
             return False
@@ -109,6 +120,23 @@ class Client(object):
 
         # Success
         return True
+
+    def get_json_request_string(self, model):
+        """Get json request string from model or raise a ClientException."""
+        # Validate before conversion.
+        try:
+            model.validate()
+        except Exception as e:
+            LOG.debug(self, 'Validate exception = %s' % e)
+            raise ClientException
+
+        try:
+            js = JSON.dumps(model.to_primitive())
+        except Exception as e:
+            LOG.debug(self, 'JSON dumps exception = %s' % e)
+            raise ClientException
+
+        return js
 
     def post_request(self, api_request_type, data=None):
         """Post the request and return the json object (Python dictionary) or raise an exception."""
