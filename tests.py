@@ -94,6 +94,19 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
+    def test_post_malformed_request_type_not_specified(self, url):
+        """Test server when no request type is specified."""
+        response = requests.post(url.base_url)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.MALFORMED_REQUEST == response.content
+
+    def test_post_malformed_request_type_not_supported(self, url):
+        """Test server when an unsupported request type is specified."""
+        url.type = '?type=unsupported'
+        response = requests.post(url.get_url_string())
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.MALFORMED_REQUEST == response.content
+
 
 class TestClient(object):
     """Client unit tests."""
