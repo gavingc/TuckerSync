@@ -12,7 +12,7 @@ import json
 import logging
 import os
 from schematics.models import Model
-from schematics.types import StringType, IntType, BaseType
+from schematics.types import StringType, IntType, BaseType, LongType
 
 
 class Logger(object):
@@ -200,7 +200,7 @@ class SyncDownRequestBody(Model):
 
     objectClass = StringType()
     clientUUID = StringType()
-    lastSync = IntType(default=0)
+    lastSync = LongType(default=0)
 
 
 class BaseDataDownRequestBody(SyncDownRequestBody):
@@ -213,7 +213,7 @@ class SyncUpRequestBody(Model):
     """Sync upload request body model."""
 
     objectClass = StringType()
-    clientUUID = IntType()
+    clientUUID = StringType()
     objects = BaseType(serialize_when_none=False)
 
 
@@ -221,7 +221,7 @@ class AccountModifyRequestBody(Model):
     """Account modify request body model."""
 
     email = StringType()
-    password = IntType()
+    password = StringType()
 
 
 class ResponseBody(Model):
