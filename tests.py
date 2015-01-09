@@ -58,6 +58,7 @@ class TestServer(object):
         """Test server 'root'."""
         response = requests.get(url.base_url)
         assert HTTP.OK == response.status_code
+        assert 0 < len(response.content)
 
     def test_post_server_test_function(self, url):
         """Test server 'test' function."""
