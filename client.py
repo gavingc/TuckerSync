@@ -55,6 +55,8 @@ class Client(object):
 
         if error_code != APIErrorCode.SUCCESS:
             LOG.debug(self, 'Check authentication failed with API error code = %s', error_code)
+            LOG.debug(self, 'Check authentication failed with API error name = %s',
+                      APIErrorCode.name(error_code))
             return False
 
         # Success
@@ -72,6 +74,8 @@ class Client(object):
 
         if error_code != APIErrorCode.SUCCESS:
             LOG.debug(self, 'Account open failed with API error code = %s', error_code)
+            LOG.debug(self, 'Account open failed with API error name = %s',
+                      APIErrorCode.name(error_code))
             return False
 
         # Success
@@ -89,6 +93,8 @@ class Client(object):
 
         if error_code != APIErrorCode.SUCCESS:
             LOG.debug(self, 'Account close failed with API error code = %s', error_code)
+            LOG.debug(self, 'Account close failed with API error name = %s',
+                      APIErrorCode.name(error_code))
             return False
 
         # Success
@@ -116,6 +122,8 @@ class Client(object):
 
         if error_code != APIErrorCode.SUCCESS:
             LOG.debug(self, 'Account modify failed with API error code = %s', error_code)
+            LOG.debug(self, 'Account modify failed with API error name = %s',
+                      APIErrorCode.name(error_code))
             return False
 
         # Success

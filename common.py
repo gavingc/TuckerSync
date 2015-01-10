@@ -130,6 +130,13 @@ class APIErrorCode(object):
     EMAIL_NOT_UNIQUE = 8
     FULL_SYNC_REQUIRED = 9
 
+    @classmethod
+    def name(cls, error_code):
+        """Lazy reverse lookup, returns the first name that matches error_code."""
+        for k, v in cls.__dict__.items():
+            if v == error_code:
+                return k
+
 
 class APIErrorResponse(object):
     """The API error response constants."""
