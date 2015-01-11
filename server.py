@@ -235,12 +235,11 @@ def check_content_type():
     content_type = web.ctx.env.get('CONTENT_TYPE')
     Log.logger.debug('Content-Type = %s' % content_type)
 
-    if content_type != CONTENT_TYPE_APP_JSON:
+    if content_type == CONTENT_TYPE_APP_JSON:
+        return True
+    else:
         Log.logger.debug('Check Fail, Content-Type != %s' % CONTENT_TYPE_APP_JSON)
         return False
-
-    # Success.
-    return True
 
 
 def main():
