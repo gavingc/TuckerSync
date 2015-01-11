@@ -6,6 +6,9 @@
 # Just for trying out code in context.
 scratch.py
 
+# Local config.
+config.py
+
 # Virtualenv symlink or directory (env/) and install directory (e.g. virtualenv-1.11.6)
 env
 virtualenv*
