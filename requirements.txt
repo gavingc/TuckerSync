@@ -1,6 +1,8 @@
 argparse==1.2.1
 flexmock==0.9.7
 flup==1.0.2
+mysql-connector-python==2.0.2
+ordereddict==1.1
 py==1.4.24
 pytest==2.6.2
 pytest-capturelog==0.7
