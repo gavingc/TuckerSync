@@ -50,60 +50,71 @@ class TestServer(object):
         return url
 
     @pytest.fixture(scope="class")
-    def headers(self):
-        return {'Accept': 'application/json',
-                'Content-Type': 'application/json'}
+    def base_headers(self):
+        return {'User-Agent': 'TuckerSync'}
 
-    def test_get_server_root(self, url):
+    @pytest.fixture(scope="class")
+    def accept_headers(self, base_headers):
+        d = base_headers.copy()
+        d['Accept'] = 'application/json'
+        return d
+
+    @pytest.fixture(scope="class")
+    def content_headers(self, accept_headers):
+        d = accept_headers.copy()
+        d['Content-Type'] = 'application/json'
+        return d
+
+    def test_get_server_root(self, url, base_headers):
         """Test server 'root'."""
-        response = requests.get(url.base_url)
+        response = requests.get(url.base_url, headers=base_headers)
         assert HTTP.OK == response.status_code
         assert 0 < len(response.content)
 
-    def test_post_server_test_function(self, url):
+    def test_post_server_test_function(self, url, base_headers):
         """Test server 'test' function."""
-        response = requests.post(url.get_url_string())
+        response = requests.post(url.get_url_string(), headers=base_headers)
         assert HTTP.OK == response.status_code
         # assert APIErrorResponse.AUTH_FAIL == response.content
 
-    def test_post_server_sync_down_function(self, url, headers):
+    def test_post_server_sync_down_function(self, url, content_headers):
         """Test server 'syncDown' function."""
         url.type = APIRequestType.SYNC_DOWN
-        response = requests.post(url.get_url_string(), headers=headers)
+        response = requests.post(url.get_url_string(), headers=content_headers)
         assert HTTP.OK == response.status_code
         # assert APIErrorResponse.SUCCESS == response.content
 
-    def test_post_server_sync_down_function_without_headers(self, url):
+    def test_post_server_sync_down_function_without_content_header(self, url, accept_headers):
         """Test server 'syncDown' function."""
         url.type = APIRequestType.SYNC_DOWN
-        response = requests.post(url.get_url_string())
+        response = requests.post(url.get_url_string(), headers=accept_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_server_sync_up_function(self, url, headers):
+    def test_post_server_sync_up_function(self, url, content_headers):
         """Test server 'syncUp' function."""
         url.type = APIRequestType.SYNC_UP
-        response = requests.post(url.get_url_string(), headers=headers)
+        response = requests.post(url.get_url_string(), headers=content_headers)
         assert HTTP.OK == response.status_code
         # assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_server_sync_up_function_without_headers(self, url):
+    def test_post_server_sync_up_function_without_content_header(self, url, accept_headers):
         """Test server 'syncUp' function."""
         url.type = APIRequestType.SYNC_UP
-        response = requests.post(url.get_url_string())
+        response = requests.post(url.get_url_string(), headers=accept_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_malformed_request_type_not_specified(self, url):
+    def test_post_malformed_request_type_not_specified(self, url, base_headers):
         """Test server when no request type is specified."""
-        response = requests.post(url.base_url)
+        response = requests.post(url.base_url, headers=base_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_malformed_request_type_not_supported(self, url):
+    def test_post_malformed_request_type_not_supported(self, url, base_headers):
         """Test server when an unsupported request type is specified."""
         url.type = '?type=unsupported'
-        response = requests.post(url.get_url_string())
+        response = requests.post(url.get_url_string(), headers=base_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 

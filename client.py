@@ -153,7 +153,8 @@ class Client(object):
 
         LOG.debug(self, 'url = %s', url_string)
 
-        headers = {'Accept': 'application/json'}
+        headers = {'Accept': 'application/json',
+                   'User-Agent': 'TuckerSync'}
 
         if data:
             headers['Content-Type'] = 'application/json'
