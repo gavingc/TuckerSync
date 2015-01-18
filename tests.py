@@ -113,7 +113,7 @@ class TestServer(object):
 
     def test_post_malformed_request_type_not_supported(self, url, base_headers):
         """Test server when an unsupported request type is specified."""
-        url.type = '?type=unsupported'
+        url.type = 'notSupported'
         response = requests.post(url.get_url_string(), headers=base_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
