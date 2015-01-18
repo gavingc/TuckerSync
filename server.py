@@ -15,9 +15,15 @@ Copyright:
 import os
 import sys
 import logging
-from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
-    CONTENT_TYPE_APP_JSON
 import web
+from schematics.exceptions import ValidationError
+import mysql.connector
+from mysql.connector import errorcode
+from passlib.context import CryptContext
+
+from config import db_config
+from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
+    CONTENT_TYPE_APP_JSON, User, SQLResult
 
 urls = (
     '/', 'Index',
@@ -59,11 +65,11 @@ class Index(object):
         if query.type == APIRequestType.SYNC_UP:
             return SyncUp().POST('product')
         if query.type == APIRequestType.ACCOUNT_OPEN:
-            return AccountOpen().POST('product')
+            return AccountOpen().POST()
         if query.type == APIRequestType.ACCOUNT_CLOSE:
-            return AccountClose().POST('product')
+            return AccountClose().POST()
         if query.type == APIRequestType.ACCOUNT_MODIFY:
-            return AccountModify().POST('product')
+            return AccountModify().POST()
 
         # No matching request type found.
         return APIErrorResponse.MALFORMED_REQUEST
@@ -93,8 +99,15 @@ class Test(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        query = web.input(key=None, email=None, password=None)
-        Log.debug(self, 'query = %s' % query)
+        query = web.input(email=None, password=None)
+
+        query_user = User()
+        query_user.email = query.email
+        query_user.password = query.password
+
+        if not check_auth(query_user):
+            return APIErrorResponse.AUTH_FAIL
+
         return APIErrorResponse.SUCCESS
 
 
@@ -148,9 +161,40 @@ class SyncUp(object):
 class AccountOpen(object):
     """Account Open request handler."""
 
-    def POST(self, object_class):
+    def POST(self):
         Log.debug(self, 'POST')
-        Log.debug(self, 'object_class = %s' % object_class)
+
+        query = web.input(email=None, password=None)
+
+        query_user = User()
+        query_user.email = query.email
+        query_user.password = query.password
+
+        try:
+            query_user.validate()
+        except ValidationError as e:
+            Log.debug(self, 'Account open validation error = %s' % e)
+            if 'password' in e.messages:
+                return APIErrorResponse.INVALID_PASSWORD
+            elif 'email' in e.messages:
+                return APIErrorResponse.INVALID_EMAIL
+            else:
+                return APIErrorResponse.INTERNAL_SERVER_ERROR
+
+        # Hash password before database insertion.
+        query_user.password = password_context().encrypt(query_user.password)
+
+        statement = User.INSERT
+        params = query_user.insert_params()
+
+        sql_result = execute_statement(statement, params, User, False)
+
+        Log.debug(self, 'sql_result = %s' % sql_result.to_native())
+
+        if sql_result.errno == errorcode.ER_DUP_ENTRY:
+            return APIErrorResponse.EMAIL_NOT_UNIQUE
+        elif sql_result.errno:
+            return APIErrorResponse.INTERNAL_SERVER_ERROR
 
         return APIErrorResponse.SUCCESS
 
@@ -158,9 +202,27 @@ class AccountOpen(object):
 class AccountClose(object):
     """Account Close request handler."""
 
-    def POST(self, object_class):
+    def POST(self):
         Log.debug(self, 'POST')
-        Log.debug(self, 'object_class = %s' % object_class)
+
+        query = web.input(email=None, password=None)
+
+        query_user = User()
+        query_user.email = query.email
+        query_user.password = query.password
+
+        if not check_auth(query_user):
+            return APIErrorResponse.AUTH_FAIL
+
+        statement = User.DELETE
+        params = query_user.delete_params()
+
+        sql_result = execute_statement(statement, params, User, False)
+
+        Log.debug(self, 'sql_result = %s' % sql_result.to_native())
+
+        if sql_result.errno:
+            return APIErrorResponse.INTERNAL_SERVER_ERROR
 
         return APIErrorResponse.SUCCESS
 
@@ -168,15 +230,59 @@ class AccountClose(object):
 class AccountModify(object):
     """Account Modify request handler."""
 
-    def POST(self, object_class):
+    def POST(self):
         Log.debug(self, 'POST')
-        Log.debug(self, 'object_class = %s' % object_class)
 
         if not check_content_type():
             return APIErrorResponse.MALFORMED_REQUEST
 
+        query = web.input(email=None, password=None)
+
+        query_user = User()
+        query_user.email = query.email
+        query_user.password = query.password
+
+        if not check_auth(query_user):
+            return APIErrorResponse.AUTH_FAIL
+
         js = web.data()
         Log.debug(self, 'js = %s' % js)
+
+        try:
+            jo = JSON.loads(js)
+        except Exception as e:
+            Log.logger.debug('JSON loads exception = %s' % e)
+            return APIErrorResponse.INVALID_JSON_OBJECT
+
+        new_user = User()
+        new_user.email = jo.get('email')
+        new_user.password = jo.get('password')
+
+        try:
+            new_user.validate()
+        except ValidationError as e:
+            Log.debug(self, 'Account open validation error = %s' % e)
+            if 'password' in e.messages:
+                return APIErrorResponse.INVALID_PASSWORD
+            elif 'email' in e.messages:
+                return APIErrorResponse.INVALID_EMAIL
+            else:
+                return APIErrorResponse.INTERNAL_SERVER_ERROR
+
+        # Hash password before database insertion.
+        new_user.password = password_context().encrypt(new_user.password)
+
+        statement = User.UPDATE_BY_EMAIL
+        params = new_user.update_by_email_params(query_user.email)
+
+        sql_result = execute_statement(statement, params, User, False)
+
+        Log.debug(self, 'sql_result = %s' % sql_result.to_native())
+
+        if sql_result.errno == errorcode.ER_DUP_ENTRY:
+            return APIErrorResponse.EMAIL_NOT_UNIQUE
+        elif sql_result.errno:
+            return APIErrorResponse.INTERNAL_SERVER_ERROR
 
         return APIErrorResponse.SUCCESS
 
@@ -227,6 +333,82 @@ class Packetizer(object):
         return js
 
 
+def execute_statement(statement, params, object_class, is_select=True):
+    """Execute the provided SQL statement taking care of opening and closing the connection.
+
+    :param statement: String SQL statement to execute.
+    :param params: Tuple of params to apply to statement, must match.
+    :param object_class: Model class to fill the result objects list with (SELECT only).
+    :param is_select: Boolean default True, MUST be set to False for Data Manipulation Statements (
+    INSERT/DELETE/UPDATE/CREATE)
+    :return: SQLResult
+    """
+    sql_result = SQLResult()
+
+    try:
+        cnx = mysql.connector.connect(**db_config)
+    except mysql.connector.Error as e:
+        Log.logger.debug('MySQL error no = %s' % e.errno)
+        Log.logger.debug('MySQL error msg = %s' % e.msg)
+        sql_result.errno = e.errno
+        return sql_result
+
+    try:
+        cursor = cnx.cursor(dictionary=True)
+    except mysql.connector.Error as e:
+        Log.logger.debug('MySQL error no = %s' % e.errno)
+        Log.logger.debug('MySQL error msg = %s' % e.msg)
+        sql_result.errno = e.errno
+        _close_db(None, cnx)
+        return sql_result
+
+    try:
+        cursor.execute(statement, params)
+    except mysql.connector.Error as e:
+        Log.logger.debug('MySQL error no = %s' % e.errno)
+        Log.logger.debug('MySQL error msg = %s' % e.msg)
+        sql_result.errno = e.errno
+        _close_db(cursor, cnx)
+        return sql_result
+
+    if is_select:
+        for row in cursor:
+            Log.logger.debug('row = %s' % row)
+            try:
+                instance = object_class(row)
+            except Exception as e:
+                Log.logger.debug('Instance creation exception = %s' % e)
+                break
+            try:
+                instance.validate()
+            except Exception as e:
+                Log.logger.debug('Instance validate exception = %s' % e)
+                break
+            sql_result.objects.append(instance)
+    else:
+        cnx.commit()  # Commit after a sequence of DML statements.
+
+    sql_result.rowcount = cursor.rowcount
+    sql_result.lastrowid = cursor.lastrowid
+
+    _close_db(cursor, cnx)
+
+    return sql_result
+
+
+def _close_db(cursor, cnx):
+    """Close the cursor and connection."""
+    try:
+        cursor.close()
+    except Exception as e:
+        Log.logger.debug('Cursor close exception = %s' % e)
+
+    try:
+        cnx.close()
+    except Exception as e:
+        Log.logger.debug('Connection close exception = %s' % e)
+
+
 def check_content_type():
     """Content-Type check returns True if Content-Type is correct, False otherwise."""
 
@@ -240,6 +422,71 @@ def check_content_type():
     else:
         Log.logger.debug('Check Fail, Content-Type != %s' % CONTENT_TYPE_APP_JSON)
         return False
+
+
+def check_auth(user):
+    """Check authorisation.
+    :param user: User to check authorisation against existing account on server.
+    :return: True if authorised, False otherwise.
+    """
+
+    Log.logger.debug('check_auth')
+
+    try:
+        user.validate()
+    except ValidationError as e:
+        Log.logger.debug('Check auth user validation error = %s' % e)
+        return False
+
+    statement = User.SELECT_BY_EMAIL
+    params = user.select_by_email_params()
+
+    sql_result = execute_statement(statement, params, User)
+
+    Log.logger.debug('sql_result = %s' % sql_result.to_native())
+
+    if sql_result.errno:
+        return False
+
+    if sql_result.objects:
+        ret_user = sql_result.objects[0]
+        Log.logger.debug('email = %s' % ret_user.email)
+        Log.logger.debug('password = %s' % ret_user.password)
+        if password_context().verify(user.password, ret_user.password):
+            return True
+
+    return False
+
+
+password_context_holder = None
+
+
+def password_context():
+    """Create the password context on demand.
+    :return: CryptContext
+    """
+    global password_context_holder
+
+    if password_context_holder:
+        return password_context_holder
+
+    password_context_holder = CryptContext(
+        # Supported schemes.
+        schemes=["sha256_crypt"],
+        default="sha256_crypt",
+
+        # Vary rounds parameter randomly when creating new hashes.
+        all__vary_rounds=0.1,
+
+        # Set a good starting point for rounds selection
+        sha512_crypt__min_rounds=60000,
+        sha256_crypt__min_rounds=80000,
+
+        # If the admin user category is selected, make a much stronger hash,
+        admin__sha512_crypt__min_rounds=120000,
+        admin__sha256_crypt__min_rounds=160000)
+
+    return password_context_holder
 
 
 def main():

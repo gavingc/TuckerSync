@@ -12,7 +12,10 @@ import json
 import logging
 import os
 from schematics.models import Model
-from schematics.types import StringType, IntType, BaseType, LongType
+from schematics.types import StringType, IntType, BaseType, LongType, EmailType, UUIDType
+from schematics.types.compound import ListType, ModelType
+
+from config import USER_PASSWORD_LEN
 
 
 class Logger(object):
@@ -236,3 +239,48 @@ class ResponseBody(Model):
 
     error = IntType(default=0)
     objects = BaseType(serialize_when_none=False)
+
+
+class SQLResult(Model):
+    """SQL results and errors."""
+
+    errno = IntType()
+    rowcount = LongType()
+    lastrowid = LongType()
+    objects = ListType(ModelType(Model), default=[])
+
+
+class User(Model):
+    """User is a core application model class."""
+
+    rowid = LongType()
+    email = EmailType(required=True)
+    password = StringType(min_length=USER_PASSWORD_LEN, required=True)
+
+    SELECT_BY_EMAIL = """SELECT id as rowid, email, password FROM User WHERE email = %s"""
+
+    def select_by_email_params(self):
+        return self.email,
+
+    INSERT = """INSERT INTO User (email, password) VALUES (%s,%s)"""
+
+    def insert_params(self):
+        return self.email, self.password
+
+    UPDATE_BY_EMAIL = """UPDATE User SET email = %s, password = %s  WHERE email = %s"""
+
+    def update_by_email_params(self, where_email):
+        return self.email, self.password, where_email
+
+    DELETE = """DELETE FROM User WHERE email = %s"""
+
+    def delete_params(self):
+        return self.email,
+
+
+class Client(Model):
+    """Client is a core application model class."""
+
+    rowid = LongType()
+    UUID = UUIDType(required=True)
+    UserID = LongType()

@@ -18,3 +18,5 @@ db_config = {'database': 'database_name',
              'password': 'secret_here',
              'host': '127.0.0.1',
              'raise_on_warnings': True}
+
+USER_PASSWORD_LEN = 14
