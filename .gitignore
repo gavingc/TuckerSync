@@ -13,6 +13,9 @@ config.py
 env
 virtualenv*
 
+# Sensitive or high-churn files not in JetBrains.gitignore below:
+.idea/dataSources.local.xml
+
 #### https://github.com/github/gitignore/blob/master/Global/JetBrains.gitignore
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
