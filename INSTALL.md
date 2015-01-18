@@ -5,6 +5,9 @@ Currently project setup is a checkout from github:
 
     git clone https://github.com/gavingc/TuckerSync.git
 
+
+**Virtualenv**
+
 Then create a virtualenv that can be accessed from the project root directory (TuckerSync/env):
 
     # Either directly:
@@ -23,25 +26,45 @@ Then create a virtualenv that can be accessed from the project root directory (T
     ln -s /usr/local/bin/python-virtualenv-tucker-sync env
     # rm virtualenv-1.11.6 not required in this case.
 
+**Requirements**
+
 Install dependencies in the virtualenv:
 
     cd TuckerSync
-    env/bin/pip install -r requirements.txt
+    env/bin/pip install -r requirements.txt --allow-external mysql-connector-python
 
 For more on virtualenv and also deploying see:  
 http://www.kromhouts.net/blog/python/python-shared-hosting/
 
-Run server and tests:
+**Config**
 
-Shell 1:
+Copy and customise template:
+
+    cd TuckerSync
+    cp config-template.py config.py
+    # Edit config.py as required.
+    
+**Database**
+
+Create a MySQL database and user matching the above config.
+
+Create tables with the create.sql file.
+
+***Run Server and Tests***
+
+The Python server and client implementations can now be run from the command line.
+
+Shell #1:
     
     cd TuckerSync
     ./server.py  
 
-Shell 2:
+Shell #2:
     
     cd TuckerSync
     ./tests.py
+
+**IDE**
 
 Project files for IntelliJ IDEA or PyCharm are included.  
 Add the new virtualenv as an SDK and set it as the project SDK in project settings.
