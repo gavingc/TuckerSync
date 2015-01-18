@@ -209,7 +209,7 @@ class Client(object):
         url.key = self.key
         url.email = self.email
         url.password = self.password
-        return url.get_url_string()
+        return url.url_string()
 
 
 class ClientException(Exception):

@@ -201,7 +201,7 @@ class APIURL(Model):
     email = StringType()
     password = StringType()
 
-    def get_url_string(self):
+    def url_string(self):
         return APIURL.URL_FORMAT % self.to_native()
 
 
