@@ -21,7 +21,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from passlib.context import CryptContext
 
-from config import db_config
+from config import db_config, APP_KEY
 from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
     CONTENT_TYPE_APP_JSON, User, SQLResult
 
@@ -52,7 +52,6 @@ class Index(object):
         Log.debug(self, 'POST')
 
         query = web.input(type=None)
-        Log.debug(self, 'query = %s' % query)
 
         if query.type is None:
             return APIErrorResponse.MALFORMED_REQUEST
@@ -489,6 +488,29 @@ def password_context():
     return password_context_holder
 
 
+def app_key_processor(handle):
+    """Private application key processor."""
+    Log.logger.debug('app_key_processor')
+
+    query = web.input(key=None)
+    Log.logger.debug('query = %s' % query)
+
+    if web.ctx.method == 'GET':
+        # App key not required.
+        return handle()
+
+    if query.key is None:
+        Log.logger.debug('return malformed request.')
+        return APIErrorResponse.MALFORMED_REQUEST
+
+    if query.key == APP_KEY:
+        # Method is not GET and key is valid.
+        return handle()
+    else:
+        Log.logger.debug('app key is invalid.')
+        return APIErrorResponse.INVALID_KEY
+
+
 def main():
     """Run the server.
 
@@ -500,6 +522,7 @@ def main():
 
     app = web.application(urls, globals())
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    app.add_processor(app_key_processor)
     app.run()
 
 

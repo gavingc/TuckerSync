@@ -22,6 +22,7 @@ from flexmock import flexmock
 
 import client
 from common import APIRequestType, HTTP, JSON, APIURL, APIErrorResponse
+from config import APP_KEY
 
 
 class TestCommon(object):
@@ -44,7 +45,7 @@ class TestServer(object):
         url = APIURL()
         url.base_url = base_url
         url.type = APIRequestType.TEST
-        url.key = 'private'
+        url.key = APP_KEY
         url.email = 'user@example.com'
         url.password = 'secret'
         return url
@@ -76,6 +77,28 @@ class TestServer(object):
         response = requests.post(url.url_string(), headers=base_headers)
         assert HTTP.OK == response.status_code
         # assert APIErrorResponse.AUTH_FAIL == response.content
+
+    def test_post_server_test_function_invalid_key(self, url, base_headers):
+        """Test server 'test' function with an invalid key."""
+        url.key = 'notPrivate'
+        response = requests.post(url.url_string(), headers=base_headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.INVALID_KEY == response.content
+
+    def test_post_server_test_function_none_key(self, url, base_headers):
+        """Test server 'test' function with 'None' as key."""
+        url.key = None
+        response = requests.post(url.url_string(), headers=base_headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.INVALID_KEY == response.content
+
+    def test_post_server_test_function_no_key(self, url, base_headers):
+        """Test server 'test' function with no key query param."""
+        url.key = None
+        url_string = url.url_string().replace('&key=None', '')
+        response = requests.post(url_string, headers=base_headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
     def test_post_server_sync_down_function(self, url, content_headers):
         """Test server 'syncDown' function."""
@@ -124,11 +147,11 @@ class TestClient(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, 'private', 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEY, 'user@example.com', 'secret')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
-        return client.Client(base_url, 'private', 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEY, 'user@example.com', 'secret')
 
     @pytest.fixture(scope="function")
     def mock_response(self):
@@ -174,14 +197,14 @@ class TestIntegration(object):
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
         return client.Client(base_url,
-                             'private',
+                             APP_KEY,
                              str(uuid.uuid4()) + '@example.com',
                              'secret78901234')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
         return client.Client(base_url,
-                             'private',
+                             APP_KEY,
                              str(uuid.uuid4()) + '@example.com',
                              'secret78901234')
 
@@ -321,11 +344,11 @@ class TestMultipleClientIntegration(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, 'private', 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEY, 'user@example.com', 'secret')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
-        return client.Client(base_url, 'private', 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEY, 'user@example.com', 'secret')
 
     def test_connection_with_sequential_clients(self, client_a, client_b):
         for x in xrange(8):
@@ -351,7 +374,7 @@ class TestMultipleClientIntegration(object):
 
         def run_client_c(q, url):
             r = True
-            client_c = client.Client(url, 'private', 'user@example.com', 'secret')
+            client_c = client.Client(url, APP_KEY, 'user@example.com', 'secret')
             short_uuid = str(client_c.UUID)[:6]
             for x in xrange(8):
                 print 'client c, short UUID:', short_uuid
