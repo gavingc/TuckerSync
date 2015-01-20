@@ -25,12 +25,45 @@ class Client(object):
     """A Tucker Sync Client Implementation."""
 
     def __init__(self, base_url, key, email, password):
+        self.url = APIURL()
         self.base_url = base_url
         self.key = key
         self.email = email
         self.password = password
         self.UUID = uuid.uuid4()
         # TODO init storage.
+
+    @property
+    def base_url(self):
+        return self.url.base_url
+
+    @base_url.setter
+    def base_url(self, base_url):
+        self.url.base_url = base_url
+
+    @property
+    def key(self):
+        return self.url.key
+
+    @key.setter
+    def key(self, key):
+        self.url.key = key
+
+    @property
+    def email(self):
+        return self.url.email
+
+    @email.setter
+    def email(self, email):
+        self.url.email = email
+
+    @property
+    def password(self):
+        return self.url.password
+
+    @password.setter
+    def password(self, password):
+        self.url.password = password
 
     def check_connection(self):
         """Check the connection to the server and that it responds with an API error code."""
@@ -149,9 +182,10 @@ class Client(object):
     def post_request(self, api_request_type, data=None):
         """Post the request and return the json object (Python dictionary) or raise an exception."""
 
-        url_string = self.get_url_string(api_request_type)
+        self.url.type = api_request_type
 
-        LOG.debug(self, 'url = %s', url_string)
+        LOG.debug(self, 'base_url= %s', self.url.base_url)
+        LOG.debug(self, 'url params= %s', self.url.params)
 
         headers = {'Accept': 'application/json',
                    'User-Agent': 'TuckerSync'}
@@ -160,7 +194,10 @@ class Client(object):
             headers['Content-Type'] = 'application/json'
 
         try:
-            response = requests.post(url_string, data, headers=headers)
+            response = requests.post(self.url.base_url,
+                                     data,
+                                     params=self.url.params,
+                                     headers=headers)
         except Exception as e:
             LOG.debug(self, 'Request post failed with exception = %s', e)
             raise ClientException
@@ -200,16 +237,6 @@ class Client(object):
 
         # Success.
         return jo
-
-    def get_url_string(self, api_request_type):
-        """Construct a url string from this clients settings."""
-        url = APIURL()
-        url.base_url = self.base_url
-        url.type = api_request_type
-        url.key = self.key
-        url.email = self.email
-        url.password = self.password
-        return url.url_string()
 
 
 class ClientException(Exception):

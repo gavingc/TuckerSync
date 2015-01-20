@@ -74,70 +74,70 @@ class TestServer(object):
 
     def test_post_server_test_function(self, url, base_headers):
         """Test server 'test' function."""
-        response = requests.post(url.url_string(), headers=base_headers)
+        response = requests.post(url.base_url, params=url.params, headers=base_headers)
         assert HTTP.OK == response.status_code
         # assert APIErrorResponse.AUTH_FAIL == response.content
 
     def test_post_server_test_function_invalid_key(self, url, base_headers):
         """Test server 'test' function with an invalid key."""
         url.key = 'notPrivate'
-        response = requests.post(url.url_string(), headers=base_headers)
+        response = requests.post(url.base_url, params=url.params, headers=base_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.INVALID_KEY == response.content
 
     def test_post_server_test_function_none_key(self, url, base_headers):
         """Test server 'test' function with 'None' as key."""
-        url.key = None
-        response = requests.post(url.url_string(), headers=base_headers)
+        url.key = 'None'
+        response = requests.post(url.base_url, params=url.params, headers=base_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.INVALID_KEY == response.content
 
     def test_post_server_test_function_no_key(self, url, base_headers):
         """Test server 'test' function with no key query param."""
         url.key = None
-        url_string = url.url_string().replace('&key=None', '')
-        response = requests.post(url_string, headers=base_headers)
+        response = requests.post(url.base_url, params=url.params, headers=base_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
     def test_post_server_sync_down_function(self, url, content_headers):
         """Test server 'syncDown' function."""
         url.type = APIRequestType.SYNC_DOWN
-        response = requests.post(url.url_string(), headers=content_headers)
+        response = requests.post(url.base_url, params=url.params, headers=content_headers)
         assert HTTP.OK == response.status_code
         # assert APIErrorResponse.SUCCESS == response.content
 
     def test_post_server_sync_down_function_without_content_header(self, url, accept_headers):
         """Test server 'syncDown' function."""
         url.type = APIRequestType.SYNC_DOWN
-        response = requests.post(url.url_string(), headers=accept_headers)
+        response = requests.post(url.base_url, params=url.params, headers=accept_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
     def test_post_server_sync_up_function(self, url, content_headers):
         """Test server 'syncUp' function."""
         url.type = APIRequestType.SYNC_UP
-        response = requests.post(url.url_string(), headers=content_headers)
+        response = requests.post(url.base_url, params=url.params, headers=content_headers)
         assert HTTP.OK == response.status_code
         # assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
     def test_post_server_sync_up_function_without_content_header(self, url, accept_headers):
         """Test server 'syncUp' function."""
         url.type = APIRequestType.SYNC_UP
-        response = requests.post(url.url_string(), headers=accept_headers)
+        response = requests.post(url.base_url, params=url.params, headers=accept_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
     def test_post_malformed_request_type_not_specified(self, url, base_headers):
         """Test server when no request type is specified."""
-        response = requests.post(url.base_url, headers=base_headers)
+        url.type = None
+        response = requests.post(url.base_url, params=url.params, headers=base_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
     def test_post_malformed_request_type_not_supported(self, url, base_headers):
         """Test server when an unsupported request type is specified."""
         url.type = 'notSupported'
-        response = requests.post(url.url_string(), headers=base_headers)
+        response = requests.post(url.base_url, params=url.params, headers=base_headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 

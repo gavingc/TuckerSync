@@ -12,8 +12,9 @@ import json
 import logging
 import os
 from schematics.models import Model
-from schematics.types import StringType, IntType, BaseType, LongType, EmailType, UUIDType
+from schematics.types import StringType, IntType, BaseType, LongType, EmailType, UUIDType, URLType
 from schematics.types.compound import ListType, ModelType
+from schematics.transforms import blacklist
 
 from config import USER_PASSWORD_LEN
 
@@ -189,20 +190,18 @@ class JSON(object):
 class APIURL(Model):
     """API URL Model."""
 
-    URL_FORMAT = '%(base_url)s' \
-                 '?type=%(type)s' \
-                 '&key=%(key)s' \
-                 '&email=%(email)s' \
-                 '&password=%(password)s'
-
-    base_url = StringType()
+    base_url = URLType()
     type = StringType()
     key = StringType()
     email = StringType()
     password = StringType()
 
-    def url_string(self):
-        return APIURL.URL_FORMAT % self.to_native()
+    class Options(object):
+        roles = {'params': blacklist('base_url')}
+
+    @property
+    def params(self):
+        return self.to_native(role='params')
 
 
 class SyncDownRequestBody(Model):
