@@ -21,7 +21,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from passlib.context import CryptContext
 
-from config import db_config, APP_KEY
+from config import db_config, APP_KEYS
 from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
     CONTENT_TYPE_APP_JSON, User, SQLResult
 
@@ -503,7 +503,7 @@ def app_key_processor(handle):
         Log.logger.debug('return malformed request.')
         return APIErrorResponse.MALFORMED_REQUEST
 
-    if query.key == APP_KEY:
+    if query.key in APP_KEYS:
         # Method is not GET and key is valid.
         return handle()
     else:

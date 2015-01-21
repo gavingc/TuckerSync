@@ -22,7 +22,7 @@ from flexmock import flexmock
 
 import client
 from common import APIRequestType, HTTP, JSON, APIURL, APIErrorResponse
-from config import APP_KEY
+from config import APP_KEYS
 
 
 class TestCommon(object):
@@ -45,7 +45,7 @@ class TestServer(object):
         url = APIURL()
         url.base_url = base_url
         url.type = APIRequestType.TEST
-        url.key = APP_KEY
+        url.key = APP_KEYS[1]
         url.email = 'user@example.com'
         url.password = 'secret'
         return url
@@ -147,11 +147,11 @@ class TestClient(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, APP_KEY, 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEYS[1], 'user@example.com', 'secret')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
-        return client.Client(base_url, APP_KEY, 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEYS[0], 'user@example.com', 'secret')
 
     @pytest.fixture(scope="function")
     def mock_response(self):
@@ -197,14 +197,14 @@ class TestIntegration(object):
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
         return client.Client(base_url,
-                             APP_KEY,
+                             APP_KEYS[1],
                              str(uuid.uuid4()) + '@example.com',
                              'secret78901234')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
         return client.Client(base_url,
-                             APP_KEY,
+                             APP_KEYS[0],
                              str(uuid.uuid4()) + '@example.com',
                              'secret78901234')
 
@@ -344,11 +344,11 @@ class TestMultipleClientIntegration(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, APP_KEY, 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEYS[1], 'user@example.com', 'secret')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
-        return client.Client(base_url, APP_KEY, 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEYS[0], 'user@example.com', 'secret')
 
     def test_connection_with_sequential_clients(self, client_a, client_b):
         for x in xrange(8):
@@ -374,7 +374,7 @@ class TestMultipleClientIntegration(object):
 
         def run_client_c(q, url):
             r = True
-            client_c = client.Client(url, APP_KEY, 'user@example.com', 'secret')
+            client_c = client.Client(url, APP_KEYS[1], 'user@example.com', 'secret')
             short_uuid = str(client_c.UUID)[:6]
             for x in xrange(8):
                 print 'client c, short UUID:', short_uuid

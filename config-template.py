@@ -11,7 +11,12 @@ Copyright:
     Copyright (c) 2014 Steven Tucker and Gavin Kromhout.
 """
 
-APP_KEY = 'private'
+# Private Application Keys.
+# Change both for production.
+# Any key listed will be accepted by the server.
+# To revoke a key for a group of clients simply remove or change it.
+#            group_a    group_b
+APP_KEYS = ('private', 'zqX2*I#y9ctNrsCKHU3xWKwgH8#JJhtVlIb980^OVT*YQ')
 
 db_config = {'database': 'database_name',
              'user': 'user_name',
