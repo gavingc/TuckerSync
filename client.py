@@ -15,7 +15,7 @@ Copyright:
 import requests
 import uuid
 
-from common import APIRequestType, JSONKey, APIErrorCode, HTTP, JSON, Logger, APIURL, \
+from common import APIRequestType, JSONKey, APIErrorCode, HTTP, JSON, Logger, APIRequest, \
     AccountModifyRequestBody
 
 LOG = Logger(__file__)
@@ -25,7 +25,7 @@ class Client(object):
     """A Tucker Sync Client Implementation."""
 
     def __init__(self, base_url, key, email, password):
-        self.url = APIURL()
+        self.request = APIRequest()
         self.base_url = base_url
         self.key = key
         self.email = email
@@ -35,35 +35,35 @@ class Client(object):
 
     @property
     def base_url(self):
-        return self.url.base_url
+        return self.request.base_url
 
     @base_url.setter
     def base_url(self, base_url):
-        self.url.base_url = base_url
+        self.request.base_url = base_url
 
     @property
     def key(self):
-        return self.url.key
+        return self.request.key
 
     @key.setter
     def key(self, key):
-        self.url.key = key
+        self.request.key = key
 
     @property
     def email(self):
-        return self.url.email
+        return self.request.email
 
     @email.setter
     def email(self, email):
-        self.url.email = email
+        self.request.email = email
 
     @property
     def password(self):
-        return self.url.password
+        return self.request.password
 
     @password.setter
     def password(self, password):
-        self.url.password = password
+        self.request.password = password
 
     def check_connection(self):
         """Check the connection to the server and that it responds with an API error code."""
@@ -182,22 +182,19 @@ class Client(object):
     def post_request(self, api_request_type, data=None):
         """Post the request and return the json object (Python dictionary) or raise an exception."""
 
-        self.url.type = api_request_type
+        self.request.type = api_request_type
+        self.request.body = data
 
-        LOG.debug(self, 'base_url= %s', self.url.base_url)
-        LOG.debug(self, 'url params= %s', self.url.params)
-
-        headers = {'Accept': 'application/json',
-                   'User-Agent': 'TuckerSync'}
-
-        if data:
-            headers['Content-Type'] = 'application/json'
+        LOG.debug(self, 'base_url = %s', self.request.base_url)
+        LOG.debug(self, 'params = %s', self.request.params)
+        LOG.debug(self, 'headers= %s', self.request.headers)
+        LOG.debug(self, 'body = %s', self.request.body)
 
         try:
-            response = requests.post(self.url.base_url,
-                                     data,
-                                     params=self.url.params,
-                                     headers=headers)
+            response = requests.post(self.request.base_url,
+                                     self.request.body,
+                                     params=self.request.params,
+                                     headers=self.request.headers)
         except Exception as e:
             LOG.debug(self, 'Request post failed with exception = %s', e)
             raise ClientException

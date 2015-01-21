@@ -14,7 +14,7 @@ import os
 from schematics.models import Model
 from schematics.types import StringType, IntType, BaseType, LongType, EmailType, UUIDType, URLType
 from schematics.types.compound import ListType, ModelType
-from schematics.transforms import blacklist
+from schematics.transforms import whitelist
 
 from config import USER_PASSWORD_LEN
 
@@ -187,8 +187,8 @@ class JSON(object):
         return json.load(fp)
 
 
-class APIURL(Model):
-    """API URL Model."""
+class APIRequest(Model):
+    """API Request Model."""
 
     base_url = URLType()
     type = StringType()
@@ -196,12 +196,32 @@ class APIURL(Model):
     email = StringType()
     password = StringType()
 
+    user_agent = StringType(serialized_name='User-Agent', default='TuckerSync')
+    accept = StringType(serialized_name='Accept', default=CONTENT_TYPE_APP_JSON)
+    content_type = StringType(serialized_name='Content-Type', default=CONTENT_TYPE_APP_JSON)
+
+    body = StringType()
+
     class Options(object):
-        roles = {'params': blacklist('base_url')}
+        roles = {'params': whitelist('type', 'key', 'email', 'password'),
+                 'base_headers': whitelist('user_agent'),
+                 'accept_headers': whitelist('user_agent', 'accept'),
+                 'content_headers': whitelist('user_agent', 'accept', 'content_type')}
 
     @property
     def params(self):
         return self.to_native(role='params')
+
+    @property
+    def headers(self):
+        if self.body:
+            return self.to_native(role='content_headers')
+        else:
+            return self.to_native(role='accept_headers')
+
+    @property
+    def base_headers(self):
+        return self.to_native(role='base_headers')
 
 
 class SyncDownRequestBody(Model):
