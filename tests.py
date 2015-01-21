@@ -195,7 +195,7 @@ class TestIntegration(object):
     def test_connection_a(self, client_a):
         """Test client_a's connection to server."""
         result = client_a.check_connection()
-        assert False == result
+        assert True == result
 
     def test_connection_b(self, client_b):
         """Test client_b's connection to server."""
