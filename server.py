@@ -507,7 +507,7 @@ def app_key_processor(handle):
         # Method is not GET and key is valid.
         return handle()
     else:
-        Log.logger.debug('app key is invalid.')
+        Log.logger.debug('return invalid key.')
         return APIErrorResponse.INVALID_KEY
 
 
