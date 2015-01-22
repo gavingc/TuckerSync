@@ -47,7 +47,7 @@ class TestServer(object):
         request.type = APIRequestType.TEST
         request.key = APP_KEYS[1]
         request.email = 'user@example.com'
-        request.password = 'secret'
+        request.password = 'secret78901234'
         return request
 
     def test_get_server_root(self, request):
@@ -57,10 +57,17 @@ class TestServer(object):
         assert 0 < len(response.content)
 
     def test_post_server_test_function(self, request):
-        """Test server 'test' function."""
+        """Test server 'test' function. Auth should fail due to no account on server."""
         response = requests.post(request.base_url, params=request.params, headers=request.headers)
         assert HTTP.OK == response.status_code
-        # assert APIErrorResponse.AUTH_FAIL == response.content
+        assert APIErrorResponse.AUTH_FAIL == response.content
+
+    def test_post_server_test_function_invalid_password(self, request):
+        """Test server 'test' function. Short invalid password. Auth simply fails don't leak why."""
+        request.password = 'short'
+        response = requests.post(request.base_url, params=request.params, headers=request.headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.AUTH_FAIL == response.content
 
     def test_post_server_test_function_invalid_key(self, request):
         """Test server 'test' function with an invalid key."""
@@ -131,11 +138,11 @@ class TestClient(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, APP_KEYS[1], 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEYS[1], 'user@example.com', 'secret78901234')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
-        return client.Client(base_url, APP_KEYS[0], 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEYS[0], 'user@example.com', 'secret78901234')
 
     @pytest.fixture(scope="function")
     def mock_response(self):
@@ -215,7 +222,7 @@ class TestIntegration(object):
     def test_account_authentication_wrong_password(self, client_a):
         """Test authentication of the account created above with wrong password."""
         saved_password = client_a.password
-        client_a.password = 'secret7890123'
+        client_a.password = 'secret789012345'  # set wrong password
         result = client_a.check_authentication()
         client_a.password = saved_password
         assert False == result
@@ -228,7 +235,7 @@ class TestIntegration(object):
     def test_account_open_invalid_password_too_short(self, client_b):
         """Test opening an account with a password that is too short."""
         saved_password = client_b.password
-        client_b.password = 'secret7890123'
+        client_b.password = 'secret7890123'  # set short password
         result = client_b.account_open()
         client_b.password = saved_password
         assert False == result
@@ -236,7 +243,7 @@ class TestIntegration(object):
     def test_account_open_invalid_email_syntax(self, client_b):
         """Test opening an account with an invalid email syntax."""
         saved_email = client_b.email
-        client_b.email = str(uuid.uuid4()) + 'example.com'
+        client_b.email = str(uuid.uuid4()) + 'example.com'  # missing '@'
         result = client_b.account_open()
         client_b.email = saved_email
         assert False == result
@@ -328,11 +335,11 @@ class TestMultipleClientIntegration(object):
 
     @pytest.fixture(scope="class")
     def client_a(self, base_url):
-        return client.Client(base_url, APP_KEYS[1], 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEYS[1], 'user@example.com', 'secret78901234')
 
     @pytest.fixture(scope="class")
     def client_b(self, base_url):
-        return client.Client(base_url, APP_KEYS[0], 'user@example.com', 'secret')
+        return client.Client(base_url, APP_KEYS[0], 'user@example.com', 'secret78901234')
 
     def test_connection_with_sequential_clients(self, client_a, client_b):
         for x in xrange(8):
@@ -358,7 +365,7 @@ class TestMultipleClientIntegration(object):
 
         def run_client_c(q, url):
             r = True
-            client_c = client.Client(url, APP_KEYS[1], 'user@example.com', 'secret')
+            client_c = client.Client(url, APP_KEYS[1], 'user@example.com', 'secret78901234')
             short_uuid = str(client_c.UUID)[:6]
             for x in xrange(8):
                 print 'client c, short UUID:', short_uuid
