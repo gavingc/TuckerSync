@@ -25,3 +25,6 @@ db_config = {'database': 'database_name',
              'raise_on_warnings': True}
 
 USER_PASSWORD_LEN = 14
+
+# Set True for production.
+PRODUCTION = False
