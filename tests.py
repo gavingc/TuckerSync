@@ -62,7 +62,7 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.AUTH_FAIL == response.content
 
-    def test_post_server_test_function_invalid_password(self, request):
+    def test_post_server_test_function_invalid_password_too_short(self, request):
         """Test server 'test' function. Short invalid password. Auth simply fails don't leak why."""
         request.password = 'short'
         response = requests.post(request.base_url, params=request.params, headers=request.headers)
