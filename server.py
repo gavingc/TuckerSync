@@ -21,7 +21,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from passlib.context import CryptContext
 
-from config import db_config, APP_KEYS
+from config import db_config, APP_KEYS, PRODUCTION
 from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
     CONTENT_TYPE_APP_JSON, User, SQLResult
 
@@ -488,27 +488,35 @@ def password_context():
     return password_context_holder
 
 
-def app_key_processor(handle):
-    """Private application key processor."""
-    Log.logger.debug('app_key_processor')
+def begin_request_processor(handle):
+    """Begin request processor."""
+    Log.logger.debug('------------------------------------------------------')
+    Log.logger.debug('begin_request_processor')
 
-    query = web.input(key=None)
-    Log.logger.debug('query = %s' % query)
+    query = web.input(type=None, key=None, email=None, password=None)
+
+    Log.logger.debug('query.type = %s', query.type)
+    Log.logger.debug('query.key = %s', query.key)
+    Log.logger.debug('query.email = %s', query.email)
+
+    if not PRODUCTION:
+        Log.logger.debug('query.password = %s', query.password)
 
     if web.ctx.method == 'GET':
         # App key not required.
         return handle()
 
+    ## Key Check ##
     if query.key is None:
+        Log.logger.debug('query key is None.')
         Log.logger.debug('return malformed request.')
         return APIErrorResponse.MALFORMED_REQUEST
 
-    if query.key in APP_KEYS:
-        # Method is not GET and key is valid.
-        return handle()
-    else:
+    if query.key not in APP_KEYS:
         Log.logger.debug('return invalid key.')
         return APIErrorResponse.INVALID_KEY
+
+    return handle()
 
 
 def main():
@@ -522,7 +530,7 @@ def main():
 
     app = web.application(urls, globals())
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-    app.add_processor(app_key_processor)
+    app.add_processor(begin_request_processor)
     app.run()
 
 
