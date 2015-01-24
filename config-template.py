@@ -15,6 +15,7 @@ Copyright:
 # Change both for production.
 # Any key listed will be accepted by the server.
 # To revoke a key for a group of clients simply remove or change it.
+# Two or more keys should be specified (test suite requires at least 2).
 #            group_a    group_b
 APP_KEYS = ('private', 'zqX2*I#y9ctNrsCKHU3xWKwgH8#JJhtVlIb980^OVT*YQ')
 
