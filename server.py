@@ -46,6 +46,7 @@ class Index(object):
 
     def GET(self):
         Log.debug(self, 'GET')
+        Log.debug(self, 'response = Welcome to Tucker Sync API.')
         return 'Welcome to Tucker Sync API.'
 
     def POST(self):
@@ -53,7 +54,10 @@ class Index(object):
 
         query = web.input(type=None)
 
+        ## Request Type ##
         if query.type is None:
+            Log.debug(self, 'query type is None.')
+            Log.debug(self, 'response = malformed request.')
             return APIErrorResponse.MALFORMED_REQUEST
         if query.type == APIRequestType.TEST:
             return Test().POST()
@@ -70,7 +74,8 @@ class Index(object):
         if query.type == APIRequestType.ACCOUNT_MODIFY:
             return AccountModify().POST()
 
-        # No matching request type found.
+        Log.debug(self, 'request type match not found.')
+        Log.debug(self, 'response = malformed request.')
         return APIErrorResponse.MALFORMED_REQUEST
 
 
@@ -105,8 +110,10 @@ class Test(object):
         query_user.password = query.password
 
         if not check_auth(query_user):
+            Log.debug(self, 'response = auth fail')
             return APIErrorResponse.AUTH_FAIL
 
+        Log.debug(self, 'response = success')
         return APIErrorResponse.SUCCESS
 
 
@@ -117,6 +124,7 @@ class BaseDataDown(object):
         Log.debug(self, 'POST')
 
         if not check_content_type():
+            Log.debug(self, 'response = malformed request')
             return APIErrorResponse.MALFORMED_REQUEST
 
         objects = []
@@ -132,6 +140,7 @@ class SyncDown(object):
         Log.debug(self, 'object_class = %s' % object_class)
 
         if not check_content_type():
+            Log.debug(self, 'response = malformed request')
             return APIErrorResponse.MALFORMED_REQUEST
 
         with open('data.json') as f:
@@ -149,6 +158,7 @@ class SyncUp(object):
         Log.debug(self, 'object_class = %s' % object_class)
 
         if not check_content_type():
+            Log.debug(self, 'response = malformed request')
             return APIErrorResponse.MALFORMED_REQUEST
 
         body = '{ "error":0, ' \
@@ -172,12 +182,15 @@ class AccountOpen(object):
         try:
             query_user.validate()
         except ValidationError as e:
-            Log.debug(self, 'Account open validation error = %s' % e)
+            Log.debug(self, 'query_user validation error = %s' % e)
             if 'password' in e.messages:
+                Log.debug(self, 'response = invalid password')
                 return APIErrorResponse.INVALID_PASSWORD
             elif 'email' in e.messages:
+                Log.debug(self, 'response = invalid email')
                 return APIErrorResponse.INVALID_EMAIL
             else:
+                Log.debug(self, 'response = internal server error')
                 return APIErrorResponse.INTERNAL_SERVER_ERROR
 
         # Hash password before database insertion.
@@ -191,10 +204,13 @@ class AccountOpen(object):
         Log.debug(self, 'sql_result = %s' % sql_result.to_native())
 
         if sql_result.errno == errorcode.ER_DUP_ENTRY:
+            Log.debug(self, 'response = email not unique')
             return APIErrorResponse.EMAIL_NOT_UNIQUE
         elif sql_result.errno:
+            Log.debug(self, 'response = internal server error')
             return APIErrorResponse.INTERNAL_SERVER_ERROR
 
+        Log.debug(self, 'response = success')
         return APIErrorResponse.SUCCESS
 
 
@@ -211,6 +227,7 @@ class AccountClose(object):
         query_user.password = query.password
 
         if not check_auth(query_user):
+            Log.debug(self, 'response = auth fail')
             return APIErrorResponse.AUTH_FAIL
 
         statement = User.DELETE
@@ -221,8 +238,10 @@ class AccountClose(object):
         Log.debug(self, 'sql_result = %s' % sql_result.to_native())
 
         if sql_result.errno:
+            Log.debug(self, 'response = internal server error')
             return APIErrorResponse.INTERNAL_SERVER_ERROR
 
+        Log.debug(self, 'response = success')
         return APIErrorResponse.SUCCESS
 
 
@@ -233,6 +252,7 @@ class AccountModify(object):
         Log.debug(self, 'POST')
 
         if not check_content_type():
+            Log.debug(self, 'response = malformed request')
             return APIErrorResponse.MALFORMED_REQUEST
 
         query = web.input(email=None, password=None)
@@ -242,15 +262,18 @@ class AccountModify(object):
         query_user.password = query.password
 
         if not check_auth(query_user):
+            Log.debug(self, 'response = auth fail')
             return APIErrorResponse.AUTH_FAIL
 
         js = web.data()
-        Log.debug(self, 'js = %s' % js)
+        if not PRODUCTION:
+            Log.debug(self, 'js = %s' % js)
 
         try:
             jo = JSON.loads(js)
         except Exception as e:
-            Log.logger.debug('JSON loads exception = %s' % e)
+            Log.debug(self, 'JSON loads exception = %s' % e)
+            Log.debug(self, 'response = invalid json object')
             return APIErrorResponse.INVALID_JSON_OBJECT
 
         new_user = User()
@@ -260,16 +283,22 @@ class AccountModify(object):
         try:
             new_user.validate()
         except ValidationError as e:
-            Log.debug(self, 'Account open validation error = %s' % e)
+            Log.debug(self, 'new_user validation error = %s' % e)
             if 'password' in e.messages:
+                Log.debug(self, 'response = invalid password')
                 return APIErrorResponse.INVALID_PASSWORD
             elif 'email' in e.messages:
+                Log.debug(self, 'response = invalid email')
                 return APIErrorResponse.INVALID_EMAIL
             else:
+                Log.debug(self, 'response = internal server error')
                 return APIErrorResponse.INTERNAL_SERVER_ERROR
 
         # Hash password before database insertion.
         new_user.password = password_context().encrypt(new_user.password)
+
+        Log.debug(self, 'new_user.email = %s' % new_user.email)
+        Log.debug(self, 'new_user.password = %s' % new_user.password)
 
         statement = User.UPDATE_BY_EMAIL
         params = new_user.update_by_email_params(query_user.email)
@@ -279,10 +308,13 @@ class AccountModify(object):
         Log.debug(self, 'sql_result = %s' % sql_result.to_native())
 
         if sql_result.errno == errorcode.ER_DUP_ENTRY:
+            Log.debug(self, 'response = email not unique')
             return APIErrorResponse.EMAIL_NOT_UNIQUE
         elif sql_result.errno:
+            Log.debug(self, 'response = internal server error')
             return APIErrorResponse.INTERNAL_SERVER_ERROR
 
+        Log.debug(self, 'response = success')
         return APIErrorResponse.SUCCESS
 
 
@@ -299,7 +331,7 @@ class Log(object):
 
     # Module logger.
     logger = logging.getLogger(os.path.basename(__file__).split('.')[0])
-    logger.debug('Log:init.')
+    logger.debug('Log:init')
 
     @staticmethod
     def debug(obj, arg):
@@ -320,15 +352,18 @@ class Packetizer(object):
         try:
             rb.validate()
         except Exception as e:
-            Log.debug(Packetizer, 'Validate exception = %s' % e)
+            Log.debug(Packetizer, 'response body validation exception = %s' % e)
+            Log.debug(Packetizer, 'response = internal server error')
             return APIErrorResponse.INTERNAL_SERVER_ERROR
 
         try:
             js = JSON.dumps(rb.to_primitive())
         except Exception as e:
             Log.debug(Packetizer, 'JSON dumps exception = %s' % e)
+            Log.debug(Packetizer, 'response = internal server error')
             return APIErrorResponse.INTERNAL_SERVER_ERROR
 
+        Log.debug(Packetizer, 'response = success + objects')
         return js
 
 
@@ -342,21 +377,25 @@ def execute_statement(statement, params, object_class, is_select=True):
     INSERT/DELETE/UPDATE/CREATE)
     :return: SQLResult
     """
+    Log.logger.debug('execute_statement')
+    Log.logger.debug('statement = %s', statement)
+    Log.logger.debug('params = %s', params)
+
     sql_result = SQLResult()
 
     try:
         cnx = mysql.connector.connect(**db_config)
     except mysql.connector.Error as e:
-        Log.logger.debug('MySQL error no = %s' % e.errno)
-        Log.logger.debug('MySQL error msg = %s' % e.msg)
+        Log.logger.debug('MySQL error no = %s', e.errno)
+        Log.logger.debug('MySQL error msg = %s', e.msg)
         sql_result.errno = e.errno
         return sql_result
 
     try:
         cursor = cnx.cursor(dictionary=True)
     except mysql.connector.Error as e:
-        Log.logger.debug('MySQL error no = %s' % e.errno)
-        Log.logger.debug('MySQL error msg = %s' % e.msg)
+        Log.logger.debug('MySQL error no = %s', e.errno)
+        Log.logger.debug('MySQL error msg = %s', e.msg)
         sql_result.errno = e.errno
         _close_db(None, cnx)
         return sql_result
@@ -364,24 +403,24 @@ def execute_statement(statement, params, object_class, is_select=True):
     try:
         cursor.execute(statement, params)
     except mysql.connector.Error as e:
-        Log.logger.debug('MySQL error no = %s' % e.errno)
-        Log.logger.debug('MySQL error msg = %s' % e.msg)
+        Log.logger.debug('MySQL error no = %s', e.errno)
+        Log.logger.debug('MySQL error msg = %s', e.msg)
         sql_result.errno = e.errno
         _close_db(cursor, cnx)
         return sql_result
 
     if is_select:
         for row in cursor:
-            Log.logger.debug('row = %s' % row)
+            Log.logger.debug('row = %s', row)
             try:
                 instance = object_class(row)
             except Exception as e:
-                Log.logger.debug('Instance creation exception = %s' % e)
+                Log.logger.debug('instance creation exception = %s', e)
                 break
             try:
                 instance.validate()
             except Exception as e:
-                Log.logger.debug('Instance validate exception = %s' % e)
+                Log.logger.debug('instance validation exception = %s', e)
                 break
             sql_result.objects.append(instance)
     else:
@@ -400,12 +439,12 @@ def _close_db(cursor, cnx):
     try:
         cursor.close()
     except Exception as e:
-        Log.logger.debug('Cursor close exception = %s' % e)
+        Log.logger.debug('cursor close exception = %s', e)
 
     try:
         cnx.close()
     except Exception as e:
-        Log.logger.debug('Connection close exception = %s' % e)
+        Log.logger.debug('connection close exception = %s', e)
 
 
 def check_content_type():
@@ -414,12 +453,12 @@ def check_content_type():
     Log.logger.debug('check_content_type')
 
     content_type = web.ctx.env.get('CONTENT_TYPE')
-    Log.logger.debug('Content-Type = %s' % content_type)
+    Log.logger.debug('Content-Type = %s', content_type)
 
     if content_type == CONTENT_TYPE_APP_JSON:
         return True
     else:
-        Log.logger.debug('Check Fail, Content-Type != %s' % CONTENT_TYPE_APP_JSON)
+        Log.logger.debug('Check Fail, Content-Type != %s', CONTENT_TYPE_APP_JSON)
         return False
 
 
@@ -434,7 +473,7 @@ def check_auth(user):
     try:
         user.validate()
     except ValidationError as e:
-        Log.logger.debug('Check auth user validation error = %s' % e)
+        Log.logger.debug('user validation error = %s', e)
         return False
 
     statement = User.SELECT_BY_EMAIL
@@ -442,15 +481,15 @@ def check_auth(user):
 
     sql_result = execute_statement(statement, params, User)
 
-    Log.logger.debug('sql_result = %s' % sql_result.to_native())
+    Log.logger.debug('sql_result = %s', sql_result.to_native())
 
     if sql_result.errno:
         return False
 
     if sql_result.objects:
         ret_user = sql_result.objects[0]
-        Log.logger.debug('email = %s' % ret_user.email)
-        Log.logger.debug('password = %s' % ret_user.password)
+        Log.logger.debug('ret_user.email = %s', ret_user.email)
+        Log.logger.debug('ret_user.password = %s', ret_user.password)
         if password_context().verify(user.password, ret_user.password):
             return True
 
@@ -508,12 +547,12 @@ def begin_request_processor(handle):
 
     ## Key Check ##
     if query.key is None:
-        Log.logger.debug('query key is None.')
-        Log.logger.debug('return malformed request.')
+        Log.logger.debug('query key is None')
+        Log.logger.debug('response = malformed request')
         return APIErrorResponse.MALFORMED_REQUEST
 
     if query.key not in APP_KEYS:
-        Log.logger.debug('return invalid key.')
+        Log.logger.debug('response = invalid key')
         return APIErrorResponse.INVALID_KEY
 
     return handle()
@@ -528,8 +567,8 @@ def main():
         ./server.py
     """
 
-    app = web.application(urls, globals())
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    app = web.application(urls, globals())
     app.add_processor(begin_request_processor)
     app.run()
 

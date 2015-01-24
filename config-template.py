@@ -27,4 +27,5 @@ db_config = {'database': 'database_name',
 USER_PASSWORD_LEN = 14
 
 # Set True for production.
+# Passwords will be logged in clear text if False.
 PRODUCTION = False
