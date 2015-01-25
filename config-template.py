@@ -25,7 +25,9 @@ db_config = {'database': 'database_name',
              'host': '127.0.0.1',
              'raise_on_warnings': True}
 
-USER_PASSWORD_LEN = 14
+# Min password length required from users.
+# Test suite requires the default of 14.
+USER_PASSWORD_MIN_LEN = 14
 
 LOG_LEVEL = 'DEBUG'  # Default: LOG_LEVEL = 'DEBUG'
 LOG_FILE_NAME = 'tucker-sync-server.log'

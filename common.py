@@ -16,7 +16,7 @@ from schematics.types import StringType, IntType, BaseType, LongType, EmailType,
 from schematics.types.compound import ListType, ModelType
 from schematics.transforms import whitelist
 
-from config import USER_PASSWORD_LEN
+from config import USER_PASSWORD_MIN_LEN
 
 
 class Logger(object):
@@ -274,7 +274,7 @@ class User(Model):
 
     rowid = LongType()
     email = EmailType(required=True)
-    password = StringType(min_length=USER_PASSWORD_LEN, required=True)
+    password = StringType(min_length=USER_PASSWORD_MIN_LEN, required=True)
 
     SELECT_BY_EMAIL = """SELECT id as rowid, email, password FROM User WHERE email = %s"""
 
