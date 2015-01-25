@@ -27,6 +27,10 @@ db_config = {'database': 'database_name',
 
 USER_PASSWORD_LEN = 14
 
+LOG_LEVEL = 'DEBUG'  # Default: LOG_LEVEL = 'DEBUG'
+LOG_FILE_NAME = 'tucker-sync-server.log'
+
 # Set True for production.
+# Log to LOG_FILE_NAME if True, stderr if False.
 # Passwords will be logged in clear text if False.
 PRODUCTION = False

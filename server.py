@@ -13,7 +13,6 @@ Copyright:
 """
 
 import os
-import sys
 import logging
 import web
 from schematics.exceptions import ValidationError
@@ -21,7 +20,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from passlib.context import CryptContext
 
-from config import db_config, APP_KEYS, PRODUCTION
+from config import db_config, APP_KEYS, PRODUCTION, LOG_FILE_NAME, LOG_LEVEL
 from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
     CONTENT_TYPE_APP_JSON, User, SQLResult
 
@@ -567,7 +566,21 @@ def main():
         ./server.py
     """
 
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    # Get log level from config.
+    log_level = getattr(logging, LOG_LEVEL.upper(), None)
+    if not isinstance(log_level, int):
+        raise ValueError('invalid log level: %s' % LOG_LEVEL)
+
+    if PRODUCTION:
+        from logging.handlers import RotatingFileHandler
+        root_logger = logging.getLogger()
+        root_logger.setLevel(log_level)
+        handler = RotatingFileHandler(LOG_FILE_NAME, maxBytes=300000, backupCount=1)
+        root_logger.addHandler(handler)
+    else:
+        from sys import stderr
+        logging.basicConfig(stream=stderr, level=log_level)
+
     app = web.application(urls, globals())
     app.add_processor(begin_request_processor)
     app.run()
