@@ -410,7 +410,6 @@ def execute_statement(statement, params, object_class, is_select=True):
 
     if is_select:
         for row in cursor:
-            Log.logger.debug('row = %s', row)
             try:
                 instance = object_class(row)
             except Exception as e:
