@@ -132,7 +132,8 @@ class APIErrorCode(object):
     AUTH_FAIL = 6
     INVALID_JSON_OBJECT = 7
     EMAIL_NOT_UNIQUE = 8
-    FULL_SYNC_REQUIRED = 9
+    CLIENT_UUID_NOT_UNIQUE = 9
+    FULL_SYNC_REQUIRED = 10
 
     @classmethod
     def name(cls, error_code):
@@ -154,6 +155,7 @@ class APIErrorResponse(object):
     AUTH_FAIL = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.AUTH_FAIL)
     INVALID_JSON_OBJECT = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INVALID_JSON_OBJECT)
     EMAIL_NOT_UNIQUE = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.EMAIL_NOT_UNIQUE)
+    CLIENT_UUID_NOT_UNIQUE = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.CLIENT_UUID_NOT_UNIQUE)
     FULL_SYNC_REQUIRED = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.FULL_SYNC_REQUIRED)
 
 

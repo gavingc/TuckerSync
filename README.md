@@ -240,7 +240,8 @@ PHP:
         const AUTH_FAIL = 6;
         const INVALID_JSON_OBJECT = 7;
         const EMAIL_NOT_UNIQUE = 8;
-        const FULL_SYNC_REQUIRED = 9;
+        const CLIENT_UUID_NOT_UNIQUE = 9;
+        const FULL_SYNC_REQUIRED = 10;
     }
 
 Use Cases
