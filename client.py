@@ -16,7 +16,7 @@ import requests
 import uuid
 
 from common import APIRequestType, JSONKey, APIErrorCode, HTTP, JSON, Logger, APIRequest, \
-    AccountModifyRequestBody
+    AccountOpenRequestBody, AccountModifyRequestBody
 
 LOG = Logger(__file__)
 
@@ -97,8 +97,13 @@ class Client(object):
 
     def account_open(self):
         """Open a new account on the server."""
+        rb = AccountOpenRequestBody()
+        rb.clientUUID = self.UUID
+
+        js = JSON.dumps(rb.to_primitive())
+
         try:
-            jo = self.post_request(APIRequestType.ACCOUNT_OPEN)
+            jo = self.post_request(APIRequestType.ACCOUNT_OPEN, js)
         except ClientException:
             LOG.debug(self, 'Account open failed with an exception.')
             return False

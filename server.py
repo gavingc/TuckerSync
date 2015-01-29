@@ -22,7 +22,8 @@ from passlib.context import CryptContext
 
 from config import db_config, APP_KEYS, PRODUCTION, LOG_FILE_NAME, LOG_LEVEL
 from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
-    CONTENT_TYPE_APP_JSON, User, SQLResult
+    CONTENT_TYPE_APP_JSON, User, Client, SQLResult, BaseDataDownRequestBody, \
+    SyncDownRequestBody, AccountOpenRequestBody, SyncUpRequestBody, AccountModifyRequestBody
 
 urls = (
     '/', 'Index',
@@ -63,9 +64,9 @@ class Index(object):
         if query.type == APIRequestType.BASE_DATA_DOWN:
             return BaseDataDown().POST()
         if query.type == APIRequestType.SYNC_DOWN:
-            return SyncDown().POST('product')
+            return SyncDown().POST()
         if query.type == APIRequestType.SYNC_UP:
-            return SyncUp().POST('product')
+            return SyncUp().POST()
         if query.type == APIRequestType.ACCOUNT_OPEN:
             return AccountOpen().POST()
         if query.type == APIRequestType.ACCOUNT_CLOSE:
@@ -102,6 +103,7 @@ class Test(object):
     def POST(self):
         Log.debug(self, 'POST')
 
+        ## Auth Check ##
         query = web.input(email=None, password=None)
 
         query_user = User()
@@ -122,9 +124,13 @@ class BaseDataDown(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        if not check_content_type():
-            Log.debug(self, 'response = malformed request')
-            return APIErrorResponse.MALFORMED_REQUEST
+        ## Auth Check Not Required ##
+
+        ## Request Body ##
+        request_body, error_response = get_request_body(BaseDataDownRequestBody)
+
+        if error_response:
+            return error_response
 
         objects = []
 
@@ -134,36 +140,57 @@ class BaseDataDown(object):
 class SyncDown(object):
     """Sync Download request handler."""
 
-    def POST(self, object_class):
+    def POST(self):
         Log.debug(self, 'POST')
-        Log.debug(self, 'object_class = %s' % object_class)
 
-        if not check_content_type():
-            Log.debug(self, 'response = malformed request')
-            return APIErrorResponse.MALFORMED_REQUEST
+        ## Auth Check ##
+        query = web.input(email=None, password=None)
 
-        with open('data.json') as f:
-            jo = JSON.load(f)
-            Log.debug(self, 'jo["products"][0] = %s' % jo["products"][0])
+        query_user = User()
+        query_user.email = query.email
+        query_user.password = query.password
 
-        return JSON.dumps(jo)
+        if not check_auth(query_user):
+            Log.debug(self, 'response = auth fail')
+            return APIErrorResponse.AUTH_FAIL
+
+        ## Request Body ##
+        request_body, error_response = get_request_body(SyncDownRequestBody)
+
+        if error_response:
+            return error_response
+
+        objects = []
+
+        return Packetizer.packResponse(APIErrorCode.SUCCESS, objects)
 
 
 class SyncUp(object):
     """Sync Upload request handler."""
 
-    def POST(self, object_class):
+    def POST(self):
         Log.debug(self, 'POST')
-        Log.debug(self, 'object_class = %s' % object_class)
 
-        if not check_content_type():
-            Log.debug(self, 'response = malformed request')
-            return APIErrorResponse.MALFORMED_REQUEST
+        ## Auth Check ##
+        query = web.input(email=None, password=None)
 
-        body = '{ "error":0, ' \
-               '"objects":[{"serverObjectId":1, "lastSync":125}, {"serverObjectId":n}] }'
+        query_user = User()
+        query_user.email = query.email
+        query_user.password = query.password
 
-        return body
+        if not check_auth(query_user):
+            Log.debug(self, 'response = auth fail')
+            return APIErrorResponse.AUTH_FAIL
+
+        ## Request Body ##
+        request_body, error_response = get_request_body(SyncUpRequestBody)
+
+        if error_response:
+            return error_response
+
+        objects = []
+
+        return Packetizer.packResponse(APIErrorCode.SUCCESS, objects)
 
 
 class AccountOpen(object):
@@ -172,6 +199,7 @@ class AccountOpen(object):
     def POST(self):
         Log.debug(self, 'POST')
 
+        ## New User ##
         query = web.input(email=None, password=None)
 
         query_user = User()
@@ -195,19 +223,26 @@ class AccountOpen(object):
         # Hash password before database insertion.
         query_user.password = password_context().encrypt(query_user.password)
 
-        statement = User.INSERT
-        params = query_user.insert_params()
+        ## Request Body ##
+        request_body, error_response = get_request_body(AccountOpenRequestBody)
 
-        sql_result = execute_statement(statement, params, User, False)
+        if error_response:
+            return error_response
 
-        Log.debug(self, 'sql_result = %s' % sql_result.to_native())
+        ## New Client ##
+        client = Client()
+        client.UUID = request_body.clientUUID
 
-        if sql_result.errno == errorcode.ER_DUP_ENTRY:
-            Log.debug(self, 'response = email not unique')
-            return APIErrorResponse.EMAIL_NOT_UNIQUE
-        elif sql_result.errno:
-            Log.debug(self, 'response = internal server error')
-            return APIErrorResponse.INTERNAL_SERVER_ERROR
+        ## Execute Inserts ##
+        statements = (User.INSERT, Client.INSERT_BY_LAST_INSERT_ID)
+        params = (query_user.insert_params(), client.insert_by_last_insert_id_params())
+
+        sql_result = execute_statements(statements, params, User, False)
+
+        error_response = handle_user_sql_result_error(sql_result)
+
+        if error_response:
+            return error_response
 
         Log.debug(self, 'response = success')
         return APIErrorResponse.SUCCESS
@@ -219,6 +254,7 @@ class AccountClose(object):
     def POST(self):
         Log.debug(self, 'POST')
 
+        ## Auth Check ##
         query = web.input(email=None, password=None)
 
         query_user = User()
@@ -229,16 +265,16 @@ class AccountClose(object):
             Log.debug(self, 'response = auth fail')
             return APIErrorResponse.AUTH_FAIL
 
+        ## Execute Delete ##
         statement = User.DELETE
         params = query_user.delete_params()
 
         sql_result = execute_statement(statement, params, User, False)
 
-        Log.debug(self, 'sql_result = %s' % sql_result.to_native())
+        error_response = handle_user_sql_result_error(sql_result)
 
-        if sql_result.errno:
-            Log.debug(self, 'response = internal server error')
-            return APIErrorResponse.INTERNAL_SERVER_ERROR
+        if error_response:
+            return error_response
 
         Log.debug(self, 'response = success')
         return APIErrorResponse.SUCCESS
@@ -250,10 +286,7 @@ class AccountModify(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        if not check_content_type():
-            Log.debug(self, 'response = malformed request')
-            return APIErrorResponse.MALFORMED_REQUEST
-
+        ## Auth Check ##
         query = web.input(email=None, password=None)
 
         query_user = User()
@@ -264,20 +297,15 @@ class AccountModify(object):
             Log.debug(self, 'response = auth fail')
             return APIErrorResponse.AUTH_FAIL
 
-        js = web.data()
-        if not PRODUCTION:
-            Log.debug(self, 'js = %s' % js)
+        ## Request Body ##
+        request_body, error_response = get_request_body(AccountModifyRequestBody)
 
-        try:
-            jo = JSON.loads(js)
-        except Exception as e:
-            Log.debug(self, 'JSON loads exception = %s' % e)
-            Log.debug(self, 'response = invalid json object')
-            return APIErrorResponse.INVALID_JSON_OBJECT
+        if error_response:
+            return error_response
 
         new_user = User()
-        new_user.email = jo.get('email')
-        new_user.password = jo.get('password')
+        new_user.email = request_body.email
+        new_user.password = request_body.password
 
         try:
             new_user.validate()
@@ -299,19 +327,16 @@ class AccountModify(object):
         Log.debug(self, 'new_user.email = %s' % new_user.email)
         Log.debug(self, 'new_user.password = %s' % new_user.password)
 
+        ## Execute Update ##
         statement = User.UPDATE_BY_EMAIL
         params = new_user.update_by_email_params(query_user.email)
 
         sql_result = execute_statement(statement, params, User, False)
 
-        Log.debug(self, 'sql_result = %s' % sql_result.to_native())
+        error_response = handle_user_sql_result_error(sql_result)
 
-        if sql_result.errno == errorcode.ER_DUP_ENTRY:
-            Log.debug(self, 'response = email not unique')
-            return APIErrorResponse.EMAIL_NOT_UNIQUE
-        elif sql_result.errno:
-            Log.debug(self, 'response = internal server error')
-            return APIErrorResponse.INTERNAL_SERVER_ERROR
+        if error_response:
+            return error_response
 
         Log.debug(self, 'response = success')
         return APIErrorResponse.SUCCESS
@@ -367,44 +392,41 @@ class Packetizer(object):
 
 
 def execute_statement(statement, params, object_class, is_select=True):
-    """Execute the provided SQL statement taking care of opening and closing the connection.
+    """Convenience wrapper for execute_statements. Wraps single statement and params in tuples."""
+    return execute_statements((statement,), (params,), object_class, is_select)
 
-    :param statement: String SQL statement to execute.
-    :param params: Tuple of params to apply to statement, must match.
-    :param object_class: Model class to fill the result objects list with (SELECT only).
-    :param is_select: Boolean default True, MUST be set to False for Data Manipulation Statements (
-    INSERT/DELETE/UPDATE/CREATE)
-    :return: SQLResult
+
+def execute_statements(statements, params, object_class, is_select=True):
+    """Execute the provided SQL statements taking care of opening and closing the db connection.
+
+    :param tuple[str] statements: SQL statements to execute.
+    :param tuple[tuple[str]] params: params to apply to statements.
+    :param object_class: schematics.models.Model class to populate results list with.
+    :param bool is_select: MUST be set to False for Data Manipulation Statements (
+    INSERT/DELETE/UPDATE/CREATE).
+    :rtype: SQLResult
     """
     Log.logger.debug('execute_statement')
-    Log.logger.debug('statement = %s', statement)
+    Log.logger.debug('statements = %s', statements)
     Log.logger.debug('params = %s', params)
 
     sql_result = SQLResult()
 
-    try:
-        cnx = mysql.connector.connect(**db_config)
-    except mysql.connector.Error as e:
-        Log.logger.debug('MySQL error no = %s', e.errno)
-        Log.logger.debug('MySQL error msg = %s', e.msg)
-        sql_result.errno = e.errno
+    cursor, cnx, sql_result.errno = _open_db()
+
+    if sql_result.errno:
         return sql_result
 
     try:
-        cursor = cnx.cursor(dictionary=True)
+        for i, stmt in enumerate(statements):
+            cursor.execute(stmt, params[i])
+        if not is_select:
+            cnx.commit()  # Commit after a sequence of DML statements.
     except mysql.connector.Error as e:
         Log.logger.debug('MySQL error no = %s', e.errno)
         Log.logger.debug('MySQL error msg = %s', e.msg)
         sql_result.errno = e.errno
-        _close_db(None, cnx)
-        return sql_result
-
-    try:
-        cursor.execute(statement, params)
-    except mysql.connector.Error as e:
-        Log.logger.debug('MySQL error no = %s', e.errno)
-        Log.logger.debug('MySQL error msg = %s', e.msg)
-        sql_result.errno = e.errno
+        sql_result.err_msg = e.msg
         _close_db(cursor, cnx)
         return sql_result
 
@@ -421,8 +443,6 @@ def execute_statement(statement, params, object_class, is_select=True):
                 Log.logger.debug('instance validation exception = %s', e)
                 break
             sql_result.objects.append(instance)
-    else:
-        cnx.commit()  # Commit after a sequence of DML statements.
 
     sql_result.rowcount = cursor.rowcount
     sql_result.lastrowid = cursor.lastrowid
@@ -430,6 +450,50 @@ def execute_statement(statement, params, object_class, is_select=True):
     _close_db(cursor, cnx)
 
     return sql_result
+
+
+def handle_user_sql_result_error(sql_result):
+    """Handle the sql_result errors, if any, from a User insert or update.
+
+    :param SQLResult sql_result: instance of results to handle.
+    :return: error_response if any, otherwise None.
+    """
+    Log.logger.debug('sql_result = %s' % sql_result.to_native())
+
+    if sql_result.errno == errorcode.ER_DUP_ENTRY:
+        if "for key 'email'" in sql_result.err_msg:
+            Log.logger.debug('response = email not unique')
+            return APIErrorResponse.EMAIL_NOT_UNIQUE
+        elif "for key 'UUID'" in sql_result.err_msg:
+            Log.logger.debug('response = client uuid not unique')
+            return APIErrorResponse.CLIENT_UUID_NOT_UNIQUE
+        else:
+            Log.logger.debug('response = internal server error')
+            return APIErrorResponse.INTERNAL_SERVER_ERROR
+
+    elif sql_result.errno:
+        Log.logger.debug('response = internal server error')
+        return APIErrorResponse.INTERNAL_SERVER_ERROR
+
+
+def _open_db():
+    """Open the connection and cursor. Return cursor, cnx, errno."""
+    try:
+        cnx = mysql.connector.connect(**db_config)
+    except mysql.connector.Error as e:
+        Log.logger.debug('MySQL error no = %s', e.errno)
+        Log.logger.debug('MySQL error msg = %s', e.msg)
+        return None, None, e.errno
+
+    try:
+        cursor = cnx.cursor(dictionary=True)
+    except mysql.connector.Error as e:
+        Log.logger.debug('MySQL error no = %s', e.errno)
+        Log.logger.debug('MySQL error msg = %s', e.msg)
+        _close_db(None, cnx)
+        return None, None, e.errno
+
+    return cursor, cnx, None
 
 
 def _close_db(cursor, cnx):
@@ -443,6 +507,62 @@ def _close_db(cursor, cnx):
         cnx.close()
     except Exception as e:
         Log.logger.debug('connection close exception = %s', e)
+
+
+def get_request_body(model_class):
+    """Get the request body as a model instance. Return request_body and error_response."""
+
+    ## Get json object (Python Dictionary) from request body. ##
+    jo, error_response = get_json_object()
+
+    if error_response:
+        return None, error_response
+
+    try:
+        request_body = model_class(jo)  # strict=True; jo must have exact keys.
+    except Exception as e:
+        Log.logger.debug('instance creation exception = %s', e)
+        Log.logger.debug('response = invalid json object')
+        return None, APIErrorResponse.INVALID_JSON_OBJECT
+
+    try:
+        request_body.validate()
+    except ValidationError as e:
+        Log.logger.debug('request_body validation error = %s', e)
+        Log.logger.debug('response = invalid json object')
+        return None, APIErrorResponse.INVALID_JSON_OBJECT
+
+    return request_body, None
+
+
+def get_json_object():
+    """Get the json object (Python dictionary) from the request. Return jo and error_response."""
+
+    if not check_content_type():
+        Log.logger.debug('response = malformed request')
+        return None, APIErrorResponse.MALFORMED_REQUEST
+
+    js = web.data()
+    if not PRODUCTION:
+        Log.logger.debug('js = %s' % js)
+
+    try:
+        jo = JSON.loads(js)
+    except Exception as e:
+        Log.logger.debug('JSON loads exception = %s', e)
+        Log.logger.debug('response = invalid json object')
+        return None, APIErrorResponse.INVALID_JSON_OBJECT
+
+    if not type(jo) is dict:
+        Log.logger.debug('type of jo is not an object/dict.')
+        Log.logger.debug('response = invalid json object')
+        return None, APIErrorResponse.INVALID_JSON_OBJECT
+
+    if not PRODUCTION:
+        Log.logger.debug('jo = %s' % jo)
+
+    # Success.
+    return jo, None
 
 
 def check_content_type():
@@ -462,7 +582,8 @@ def check_content_type():
 
 def check_auth(user):
     """Check authorisation.
-    :param user: User to check authorisation against existing account on server.
+
+    :param User user: to check authorisation against existing account on server.
     :return: True if authorised, False otherwise.
     """
 
@@ -499,7 +620,8 @@ password_context_holder = None
 
 def password_context():
     """Create the password context on demand.
-    :return: CryptContext
+
+    :rtype: CryptContext
     """
     global password_context_holder
 

@@ -212,6 +212,14 @@ Message Body: JSON object containing data
 
 *Example request body:*
 
+accountOpen:
+
+    {"clientUUID":"UUID"}
+
+accountClose:
+
+    None
+
 accountModify:
 
     {"email":"new_user@example.com","password":"new_password"}

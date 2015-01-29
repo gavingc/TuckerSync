@@ -21,7 +21,8 @@ import uuid
 from flexmock import flexmock
 
 import client
-from common import APIRequestType, HTTP, JSON, APIRequest, APIErrorResponse
+from common import APIRequestType, HTTP, JSON, APIRequest, APIErrorResponse, JSONKey, \
+    APIErrorCode, SyncDownRequestBody, AccountOpenRequestBody
 from config import APP_KEYS
 
 
@@ -40,6 +41,20 @@ class TestServer(object):
     base_url is a test fixture defined in conftest.py
     """
 
+    @pytest.fixture(scope='class')
+    def account_open_request_body(self):
+        rb = AccountOpenRequestBody()
+        rb.clientUUID = uuid.uuid4()
+        return rb
+
+    @pytest.fixture(scope='class')
+    def sync_down_request_body(self, account_open_request_body):
+        rb = SyncDownRequestBody()
+        rb.objectClass = 'Product'
+        rb.clientUUID = account_open_request_body.clientUUID
+        rb.lastSync = 0
+        return rb
+
     @pytest.fixture
     def request(self, base_url):
         request = APIRequest()
@@ -56,11 +71,36 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert 0 < len(response.content)
 
-    def test_post_server_test_function(self, request):
+    def test_post_server_test_function_check_connection(self, request):
         """Test server 'test' function. Auth should fail due to no account on server."""
         response = requests.post(request.base_url, params=request.params, headers=request.headers)
-        assert HTTP.OK == response.status_code
+        assert HTTP.OK == response.status_code  # connection ok.
         assert APIErrorResponse.AUTH_FAIL == response.content
+
+    def test_post_server_account_open(self, request, account_open_request_body):
+        """Test server 'accountOpen' function."""
+        request.type = APIRequestType.ACCOUNT_OPEN
+        request.body = JSON.dumps(account_open_request_body.to_primitive())
+        response = requests.post(request.base_url, request.body,
+                                 params=request.params, headers=request.headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.SUCCESS == response.content
+
+    def test_post_server_test_function_authentication(self, request):
+        """Test server 'test' function. Auth should pass."""
+        response = requests.post(request.base_url, params=request.params, headers=request.headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.SUCCESS == response.content
+
+    def test_post_server_account_open_uuid_not_unique(self, request, account_open_request_body):
+        """Test server 'accountOpen' function with existing client UUID (created above)."""
+        request.type = APIRequestType.ACCOUNT_OPEN
+        request.email = 'user2@example.com'
+        request.body = JSON.dumps(account_open_request_body.to_primitive())
+        response = requests.post(request.base_url, request.body,
+                                 params=request.params, headers=request.headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.CLIENT_UUID_NOT_UNIQUE == response.content
 
     def test_post_server_test_function_invalid_password_too_short(self, request):
         """Test server 'test' function. Short invalid password. Auth simply fails don't leak why."""
@@ -90,12 +130,16 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_server_sync_down_function(self, request):
+    def test_post_server_sync_down_function(self, request, sync_down_request_body):
         """Test server 'syncDown' function."""
         request.type = APIRequestType.SYNC_DOWN
-        response = requests.post(request.base_url, params=request.params, headers=request.headers)
+        request.body = JSON.dumps(sync_down_request_body.to_primitive())
+        response = requests.post(request.base_url, request.body,
+                                 params=request.params, headers=request.headers)
         assert HTTP.OK == response.status_code
-        # assert APIErrorResponse.SUCCESS == response.content
+        jo = response.json()
+        assert APIErrorCode.SUCCESS == jo[JSONKey.ERROR]
+        assert isinstance(jo[JSONKey.OBJECTS], list)
 
     def test_post_server_sync_down_function_without_content_header(self, request):
         """Test server 'syncDown' function."""
@@ -131,6 +175,19 @@ class TestServer(object):
         response = requests.post(request.base_url, params=request.params, headers=request.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
+
+    def test_post_server_account_close(self, request):
+        """Test server 'accountClose' function."""
+        request.type = APIRequestType.ACCOUNT_CLOSE
+        response = requests.post(request.base_url, params=request.params, headers=request.headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.SUCCESS == response.content
+
+    def test_post_server_test_function_authentication_closed_account(self, request):
+        """Test server 'test' function. Auth should fail."""
+        response = requests.post(request.base_url, params=request.params, headers=request.headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.AUTH_FAIL == response.content
 
 
 class TestClient(object):

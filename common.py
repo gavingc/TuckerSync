@@ -229,9 +229,9 @@ class APIRequest(Model):
 class SyncDownRequestBody(Model):
     """Sync download request body model."""
 
-    objectClass = StringType()
-    clientUUID = StringType()
-    lastSync = LongType(default=0)
+    objectClass = StringType(required=True)
+    clientUUID = UUIDType(required=True)
+    lastSync = LongType(required=True)
 
 
 class BaseDataDownRequestBody(SyncDownRequestBody):
@@ -243,16 +243,22 @@ class BaseDataDownRequestBody(SyncDownRequestBody):
 class SyncUpRequestBody(Model):
     """Sync upload request body model."""
 
-    objectClass = StringType()
-    clientUUID = StringType()
-    objects = BaseType(serialize_when_none=False)
+    objectClass = StringType(required=True)
+    clientUUID = UUIDType(required=True)
+    objects = ListType(ModelType(Model), required=True)
+
+
+class AccountOpenRequestBody(Model):
+    """Account open request body model."""
+
+    clientUUID = UUIDType(required=True)
 
 
 class AccountModifyRequestBody(Model):
     """Account modify request body model."""
 
-    email = StringType()
-    password = StringType()
+    email = StringType(required=True)
+    password = StringType(required=True)
 
 
 class ResponseBody(Model):
@@ -266,13 +272,14 @@ class SQLResult(Model):
     """SQL results and errors."""
 
     errno = IntType()
+    err_msg = StringType()
     rowcount = LongType()
     lastrowid = LongType()
     objects = ListType(ModelType(Model), default=[])
 
 
 class User(Model):
-    """User is a core application model class."""
+    """User is a core application database model."""
 
     rowid = LongType()
     email = EmailType(required=True)
@@ -283,7 +290,7 @@ class User(Model):
     def select_by_email_params(self):
         return self.email,
 
-    INSERT = """INSERT INTO User (email, password) VALUES (%s,%s)"""
+    INSERT = """INSERT INTO User (email, password) VALUES (%s, %s)"""
 
     def insert_params(self):
         return self.email, self.password
@@ -300,8 +307,23 @@ class User(Model):
 
 
 class Client(Model):
-    """Client is a core application model class."""
+    """Client is a core application database model."""
 
     rowid = LongType()
-    UUID = UUIDType(required=True)
     UserID = LongType()
+    UUID = UUIDType(serialized_name='clientUUID', required=True)
+
+    SELECT_BY_UUID = """SELECT id as rowid, UserID, UUID FROM Client WHERE UUID = %s"""
+
+    def select_by_uuid_params(self):
+        return self.uuid,
+
+    INSERT = """INSERT INTO Client (UserID, UUID) VALUES (%s, %s)"""
+
+    def insert_params(self):
+        return self.UserID, str(self.UUID)
+
+    INSERT_BY_LAST_INSERT_ID = """INSERT INTO Client (UserID, UUID) VALUES (LAST_INSERT_ID(), %s)"""
+
+    def insert_by_last_insert_id_params(self):
+        return str(self.UUID),
