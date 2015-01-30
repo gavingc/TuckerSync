@@ -104,15 +104,10 @@ class Test(object):
         Log.debug(self, 'POST')
 
         ## Auth Check ##
-        query = web.input(email=None, password=None)
+        auth_user, error_response = get_authenticated_user()
 
-        query_user = User()
-        query_user.email = query.email
-        query_user.password = query.password
-
-        if not check_auth(query_user):
-            Log.debug(self, 'response = auth fail')
-            return APIErrorResponse.AUTH_FAIL
+        if error_response:
+            return error_response
 
         Log.debug(self, 'response = success')
         return APIErrorResponse.SUCCESS
@@ -144,15 +139,10 @@ class SyncDown(object):
         Log.debug(self, 'POST')
 
         ## Auth Check ##
-        query = web.input(email=None, password=None)
+        auth_user, error_response = get_authenticated_user()
 
-        query_user = User()
-        query_user.email = query.email
-        query_user.password = query.password
-
-        if not check_auth(query_user):
-            Log.debug(self, 'response = auth fail')
-            return APIErrorResponse.AUTH_FAIL
+        if error_response:
+            return error_response
 
         ## Request Body ##
         request_body, error_response = get_request_body(SyncDownRequestBody)
@@ -172,15 +162,10 @@ class SyncUp(object):
         Log.debug(self, 'POST')
 
         ## Auth Check ##
-        query = web.input(email=None, password=None)
+        auth_user, error_response = get_authenticated_user()
 
-        query_user = User()
-        query_user.email = query.email
-        query_user.password = query.password
-
-        if not check_auth(query_user):
-            Log.debug(self, 'response = auth fail')
-            return APIErrorResponse.AUTH_FAIL
+        if error_response:
+            return error_response
 
         ## Request Body ##
         request_body, error_response = get_request_body(SyncUpRequestBody)
@@ -202,14 +187,14 @@ class AccountOpen(object):
         ## New User ##
         query = web.input(email=None, password=None)
 
-        query_user = User()
-        query_user.email = query.email
-        query_user.password = query.password
+        new_user = User()
+        new_user.email = query.email
+        new_user.password = query.password
 
         try:
-            query_user.validate()
+            new_user.validate()
         except ValidationError as e:
-            Log.debug(self, 'query_user validation error = %s' % e)
+            Log.debug(self, 'new_user validation error = %s' % e)
             if 'password' in e.messages:
                 Log.debug(self, 'response = invalid password')
                 return APIErrorResponse.INVALID_PASSWORD
@@ -221,7 +206,7 @@ class AccountOpen(object):
                 return APIErrorResponse.INTERNAL_SERVER_ERROR
 
         # Hash password before database insertion.
-        query_user.password = password_context().encrypt(query_user.password)
+        new_user.password = password_context().encrypt(new_user.password)
 
         ## Request Body ##
         request_body, error_response = get_request_body(AccountOpenRequestBody)
@@ -235,7 +220,7 @@ class AccountOpen(object):
 
         ## Execute Inserts ##
         statements = (User.INSERT, Client.INSERT_BY_LAST_INSERT_ID)
-        params = (query_user.insert_params(), client.insert_by_last_insert_id_params())
+        params = (new_user.insert_params(), client.insert_by_last_insert_id_params())
 
         sql_result = execute_statements(statements, params, User, False)
 
@@ -255,19 +240,14 @@ class AccountClose(object):
         Log.debug(self, 'POST')
 
         ## Auth Check ##
-        query = web.input(email=None, password=None)
+        auth_user, error_response = get_authenticated_user()
 
-        query_user = User()
-        query_user.email = query.email
-        query_user.password = query.password
-
-        if not check_auth(query_user):
-            Log.debug(self, 'response = auth fail')
-            return APIErrorResponse.AUTH_FAIL
+        if error_response:
+            return error_response
 
         ## Execute Delete ##
         statement = User.DELETE
-        params = query_user.delete_params()
+        params = auth_user.delete_params()
 
         sql_result = execute_statement(statement, params, User, False)
 
@@ -287,15 +267,10 @@ class AccountModify(object):
         Log.debug(self, 'POST')
 
         ## Auth Check ##
-        query = web.input(email=None, password=None)
+        auth_user, error_response = get_authenticated_user()
 
-        query_user = User()
-        query_user.email = query.email
-        query_user.password = query.password
-
-        if not check_auth(query_user):
-            Log.debug(self, 'response = auth fail')
-            return APIErrorResponse.AUTH_FAIL
+        if error_response:
+            return error_response
 
         ## Request Body ##
         request_body, error_response = get_request_body(AccountModifyRequestBody)
@@ -303,14 +278,14 @@ class AccountModify(object):
         if error_response:
             return error_response
 
-        new_user = User()
-        new_user.email = request_body.email
-        new_user.password = request_body.password
+        mod_user = User()
+        mod_user.email = request_body.email
+        mod_user.password = request_body.password
 
         try:
-            new_user.validate()
+            mod_user.validate()
         except ValidationError as e:
-            Log.debug(self, 'new_user validation error = %s' % e)
+            Log.debug(self, 'mod_user validation error = %s' % e)
             if 'password' in e.messages:
                 Log.debug(self, 'response = invalid password')
                 return APIErrorResponse.INVALID_PASSWORD
@@ -322,14 +297,14 @@ class AccountModify(object):
                 return APIErrorResponse.INTERNAL_SERVER_ERROR
 
         # Hash password before database insertion.
-        new_user.password = password_context().encrypt(new_user.password)
+        mod_user.password = password_context().encrypt(mod_user.password)
 
-        Log.debug(self, 'new_user.email = %s' % new_user.email)
-        Log.debug(self, 'new_user.password = %s' % new_user.password)
+        Log.debug(self, 'mod_user.email = %s' % mod_user.email)
+        Log.debug(self, 'mod_user.password = %s' % mod_user.password)
 
         ## Execute Update ##
         statement = User.UPDATE_BY_EMAIL
-        params = new_user.update_by_email_params(query_user.email)
+        params = mod_user.update_by_email_params(auth_user.email)
 
         sql_result = execute_statement(statement, params, User, False)
 
@@ -580,39 +555,44 @@ def check_content_type():
         return False
 
 
-def check_auth(user):
-    """Check authorisation.
+def get_authenticated_user():
+    """Get authenticated user from database. Return auth_user and error_response."""
 
-    :param User user: to check authorisation against existing account on server.
-    :return: True if authorised, False otherwise.
-    """
+    Log.logger.debug('get_authenticated_user')
 
-    Log.logger.debug('check_auth')
+    query = web.input(email=None, password=None)
+
+    query_user = User()
+    query_user.email = query.email
+    query_user.password = query.password
 
     try:
-        user.validate()
+        query_user.validate()
     except ValidationError as e:
-        Log.logger.debug('user validation error = %s', e)
-        return False
+        Log.logger.debug('query_user validation error = %s', e)
+        Log.logger.debug('response = auth fail')
+        return None, APIErrorResponse.AUTH_FAIL
 
     statement = User.SELECT_BY_EMAIL
-    params = user.select_by_email_params()
+    params = query_user.select_by_email_params()
 
     sql_result = execute_statement(statement, params, User)
 
     Log.logger.debug('sql_result = %s', sql_result.to_native())
 
     if sql_result.errno:
-        return False
+        return None, APIErrorResponse.AUTH_FAIL
 
     if sql_result.objects:
-        ret_user = sql_result.objects[0]
-        Log.logger.debug('ret_user.email = %s', ret_user.email)
-        Log.logger.debug('ret_user.password = %s', ret_user.password)
-        if password_context().verify(user.password, ret_user.password):
-            return True
+        auth_user = sql_result.objects[0]
+        Log.logger.debug('auth_user.email = %s', auth_user.email)
+        Log.logger.debug('auth_user.password = %s', auth_user.password)
+        if password_context().verify(query_user.password, auth_user.password):
+            Log.logger.debug('user authenticated')
+            return auth_user, None
 
-    return False
+    Log.logger.debug('response = auth fail')
+    return None, APIErrorResponse.AUTH_FAIL
 
 
 password_context_holder = None
