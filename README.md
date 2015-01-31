@@ -290,7 +290,7 @@ id - server object id.
 userId - required on each object?  
 clientId - the unique client id that created the object.  
 clientObjectId - the object id from the client that created the object.  
-last_sync - long value, 0 if not synced yet, determined by server and then recorded locally by client.  
+lastSync - long value, 0 if not synced yet, determined by server and then recorded locally by client.  
 
 The clientId and clientObjectId together form a unique constraint. Allowing the server to identify duplicates that the client may resend after a response transmission fails to reach the client:
 
