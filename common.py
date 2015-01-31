@@ -310,20 +310,20 @@ class Client(Model):
     """Client is a core application database model."""
 
     rowid = LongType()
-    UserID = LongType()
+    userId = LongType()
     UUID = UUIDType(serialized_name='clientUUID', required=True)
 
-    SELECT_BY_UUID = """SELECT id as rowid, UserID, UUID FROM Client WHERE UUID = %s"""
+    SELECT_BY_UUID = """SELECT id as rowid, userId, UUID FROM Client WHERE UUID = %s"""
 
     def select_by_uuid_params(self):
         return self.uuid,
 
-    INSERT = """INSERT INTO Client (UserID, UUID) VALUES (%s, %s)"""
+    INSERT = """INSERT INTO Client (userId, UUID) VALUES (%s, %s)"""
 
     def insert_params(self):
-        return self.UserID, str(self.UUID)
+        return self.userId, str(self.UUID)
 
-    INSERT_BY_LAST_INSERT_ID = """INSERT INTO Client (UserID, UUID) VALUES (LAST_INSERT_ID(), %s)"""
+    INSERT_BY_LAST_INSERT_ID = """INSERT INTO Client (userId, UUID) VALUES (LAST_INSERT_ID(), %s)"""
 
     def insert_by_last_insert_id_params(self):
         return str(self.UUID),
