@@ -307,6 +307,7 @@ class User(Model):
     rowid = LongType()
     email = EmailType(required=True)
     password = StringType(min_length=USER_PASSWORD_MIN_LEN, required=True)
+    clients = ListType(ModelType(Client), default=[])
 
     SELECT_BY_EMAIL = """SELECT id as rowid, email, password FROM User WHERE email = %s"""
 
