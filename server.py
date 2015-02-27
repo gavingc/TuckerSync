@@ -23,7 +23,8 @@ from passlib.context import CryptContext
 from config import db_config, APP_KEYS, PRODUCTION, LOG_FILE_NAME, LOG_LEVEL
 from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
     CONTENT_TYPE_APP_JSON, User, Client, SQLResult, BaseDataDownRequestBody, \
-    SyncDownRequestBody, AccountOpenRequestBody, SyncUpRequestBody, AccountModifyRequestBody
+    SyncDownRequestBody, AccountOpenRequestBody, SyncUpRequestBody, AccountModifyRequestBody, \
+    UserClient
 
 urls = (
     '/', 'Index',
@@ -562,7 +563,7 @@ def get_authenticated_user():
 
     query = web.input(email=None, password=None)
 
-    query_user = User()
+    query_user = UserClient()
     query_user.email = query.email
     query_user.password = query.password
 
@@ -573,26 +574,45 @@ def get_authenticated_user():
         Log.logger.debug('response = auth fail')
         return None, APIErrorResponse.AUTH_FAIL
 
-    statement = User.SELECT_BY_EMAIL
+    statement = UserClient.SELECT_BY_EMAIL
     params = query_user.select_by_email_params()
 
-    sql_result = execute_statement(statement, params, User)
+    sql_result = execute_statement(statement, params, UserClient)
 
     Log.logger.debug('sql_result = %s', sql_result.to_native())
 
     if sql_result.errno:
+        Log.logger.debug('response = auth fail')
+        return None, APIErrorResponse.INTERNAL_SERVER_ERROR
+
+    if not sql_result.objects:
+        Log.logger.debug('response = auth fail')
         return None, APIErrorResponse.AUTH_FAIL
 
-    if sql_result.objects:
-        auth_user = sql_result.objects[0]
-        Log.logger.debug('auth_user.email = %s', auth_user.email)
-        Log.logger.debug('auth_user.password = %s', auth_user.password)
-        if password_context().verify(query_user.password, auth_user.password):
-            Log.logger.debug('user authenticated')
-            return auth_user, None
+    ret_user = sql_result.objects[0]
 
-    Log.logger.debug('response = auth fail')
-    return None, APIErrorResponse.AUTH_FAIL
+    auth_user = User()
+    auth_user.rowid = ret_user.rowid
+    auth_user.email = ret_user.email
+    auth_user.password = ret_user.password
+
+    Log.logger.debug('auth_user.email = %s', auth_user.email)
+    Log.logger.debug('auth_user.password = %s', auth_user.password)
+
+    if not password_context().verify(query_user.password, auth_user.password):
+        Log.logger.debug('response = auth fail')
+        return None, APIErrorResponse.AUTH_FAIL
+
+    # Add Clients #
+    for uc in sql_result.objects:
+        client = Client()
+        client.rowid = uc.client_rowid
+        client.UUID = uc.UUID
+        auth_user.clients.append(client)
+
+    # Success.
+    Log.logger.debug('user authenticated')
+    return auth_user, None
 
 
 password_context_holder = None

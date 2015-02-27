@@ -328,3 +328,19 @@ class User(Model):
 
     def delete_params(self):
         return self.email,
+
+
+class UserClient(User):
+    """User Client join model."""
+
+    client_rowid = LongType()
+    UUID = UUIDType()
+
+    SELECT_BY_EMAIL = """SELECT u.id AS rowid, u.email, u.password, c.id AS client_rowid, c.UUID
+                          FROM User AS u
+                          LEFT JOIN Client AS c ON c.userId = u.id
+                          WHERE u.email = %s
+                          LIMIT 100"""
+
+    def select_by_email_params(self):
+        return self.email,
