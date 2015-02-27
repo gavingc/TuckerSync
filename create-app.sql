@@ -1,0 +1,21 @@
+
+CREATE TABLE Setting (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  clientId INT UNSIGNED NOT NULL,
+  clientObjectId INT UNSIGNED NOT NULL,
+  lastSync BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(255),
+  value VARCHAR(255),
+  FOREIGN KEY (clientId) REFERENCES Client(id) ON DELETE CASCADE,
+  UNIQUE INDEX `uniqueObjectConstraint` (`clientId`,`clientObjectId`)
+) ENGINE=INNODB;
+
+CREATE TABLE Product (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  clientId INT UNSIGNED NOT NULL,
+  clientObjectId INT UNSIGNED NOT NULL,
+  lastSync BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(255),
+  FOREIGN KEY (clientId) REFERENCES Client(id) ON DELETE CASCADE,
+  UNIQUE INDEX `uniqueObjectConstraint` (`clientId`,`clientObjectId`)
+) ENGINE=INNODB;
