@@ -439,7 +439,7 @@ class TestMultipleClientIntegration(object):
         assert True == client_c_result
 
 
-def main():
+def main(file_name):
     """Run the test suite.
 
     Accepted optional command line arguments:
@@ -470,7 +470,7 @@ def main():
         args.append(cmd_args.baseurl)
 
     # Specify this file as the only test file.
-    args.append(__file__)
+    args.append(file_name)
 
     # Optional command line argument to only run tests which match the given substring expression.
     if cmd_args.k:
@@ -490,4 +490,4 @@ def main():
 # Run main when commands read either from standard input,
 # from a script file, or from an interactive prompt.
 if __name__ == "__main__":
-    main()
+    main(__file__)
