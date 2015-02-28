@@ -12,7 +12,8 @@ import json
 import logging
 import os
 from schematics.models import Model
-from schematics.types import StringType, IntType, BaseType, LongType, EmailType, UUIDType, URLType
+from schematics.types import StringType, IntType, BaseType, LongType, EmailType, UUIDType, \
+    URLType, BooleanType
 from schematics.types.compound import ListType, ModelType
 from schematics.transforms import whitelist
 
@@ -276,6 +277,108 @@ class SQLResult(Model):
     rowcount = LongType()
     lastrowid = LongType()
     objects = ListType(ModelType(Model), default=[])
+
+
+class SyncCount(Model):
+    """SyncCount is a core application database model."""
+
+    sync_count = LongType()
+    object_class = StringType()
+    is_committed = BooleanType()
+
+    # Select committed sync count by object class.
+    # Operation:
+    # Select the uncommitted sessions for object class and return the lowest syncCount - 1,
+    # otherwise if no uncommitted sessions return the highest sync count for object class,
+    # otherwise if no records return 0.
+    SELECT_COMMITTED_SC = """SELECT
+            CASE WHEN COUNT(*) THEN MIN(syncCount) - 1
+            ELSE (SELECT
+                    CASE WHEN COUNT(*) THEN MAX(syncCount)
+                    ELSE 0
+                    END
+                 FROM SyncCount
+                 WHERE objectClass = %s)
+            END AS sync_count
+        FROM SyncCount
+        WHERE objectClass = %s
+              AND isCommitted = 0"""
+
+    def select_committed_sc_params(self):
+        return self.object_class, self.object_class
+
+    # Insert uncommitted session for object class.
+    INSERT = """INSERT INTO SyncCount (objectClass) VALUES (%s)"""
+
+    def insert_params(self):
+        return self.object_class,
+
+    # Delete committed sessions prior to the currently inserted one.
+    # Dependant on LAST_INSERT_ID() of the current database connection.
+    DELETE_TRAILING_COMMITTED = """DELETE
+        FROM SyncCount
+        WHERE syncCount < LAST_INSERT_ID()
+            AND objectClass = %s
+            AND isCommitted = 1"""
+
+    def delete_trailing_committed_params(self):
+        return self.object_class,
+
+    # Select session sync count by object class.
+    # Putting the sequence together to issue a session sync count.
+    # Must be executed outside of the main data transaction.
+    # Operation:
+    # First a new uncommitted session is inserted.
+    # This becomes the new sync count head marker (not committed_sc).
+    # Then trailing committed sessions are deleted to keep the table size small.
+    # Some rows are locked during the delete but insert with auto_increment will still function
+    #  for parallel sessions.
+    # The session sync count is returned from LAST_INSERT_ID() which is within the current database
+    # connection and does not read from the table.
+    SELECT_SESSION_SC = (INSERT,
+                         'COMMIT',
+                         DELETE_TRAILING_COMMITTED,
+                         'COMMIT',
+                         'SELECT LAST_INSERT_ID() AS sync_count')
+
+    def select_session_sc_params(self):
+        return (self.insert_params(),
+                None,
+                self.delete_trailing_committed_params(),
+                None,
+                None)
+
+    # Mark session sync count as committed.
+    # Marking the session committed must be atomic with the data commit.
+    # However the session must still be marked as committed after a data transaction fail/rollback.
+    # Therefore should initially be executed within the same connection and transaction as the
+    # data and again if the data transaction fails.
+    UPDATE_SET_IS_COMMITTED = """UPDATE SyncCount SET isCommitted = 1 WHERE syncCount = %s"""
+
+    def update_set_is_committed_params(self):
+        return self.sync_count,
+
+    # Mark expired past and future sessions as committed.
+    # Provides self healing from any rare cases of sessions that failed to be marked as committed.
+    # Configured expiry time is 1 hour 20 min.
+    # Which should allow sessions at least 20 min to commit even in the case of daylight savings
+    # being applied to server (although the UTC to local time zone may handle this effectively).
+    # The normal case of time jitter and drift/update should be handled by the expiry time.
+    # The committed rows will be deleted when the next session sync count is issued.
+    # If any rows are affected a warning should be logged:
+    WARN_EXPIRED_SESSIONS_COMMITTED = 'There were uncommitted sessions over 1 hour 20 min in the' \
+                                      ' past or future! These expired sessions (%s) have been' \
+                                      ' marked as committed.'
+
+    UPDATE_SET_IS_COMMITTED_EXPIRED = """UPDATE SyncCount
+        SET isCommitted = 1
+        WHERE objectClass = %s
+          AND isCommitted = 0
+          AND (createAt < SUBTIME(NOW(),'01:20:00')
+              OR createAt > ADDTIME(NOW(),'01:20:00'))"""
+
+    def update_set_is_committed_expired_params(self):
+        return self.object_class,
 
 
 class Client(Model):
