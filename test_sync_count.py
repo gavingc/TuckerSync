@@ -31,7 +31,7 @@ from time import sleep, time
 from uuid import uuid4
 
 from tests import main
-from server import execute_statement, execute_statements, open_db, _close_db
+from server import execute_statement, execute_statements, open_db, close_db
 from common import SyncCount
 
 
@@ -80,7 +80,7 @@ def drop_create_tables():
             # MySQL warnings greater than note level may raise a misleading error.
             assert -1 != result.rowcount
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
 
 def new_client_id():
@@ -130,7 +130,7 @@ def get_committed_sc_x(object_class):
 
     committed_sc.sync_count = rows[0]['sync_count']
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     return committed_sc
 
@@ -170,7 +170,7 @@ def get_session_sc_x(object_class, insert_commit=True):
 
     session_sc.sync_count = rows[0]['sync_count']
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     assert insert_rowid == session_sc.sync_count
 
@@ -196,7 +196,7 @@ def mark_session_committed_x(session_sync_count):
 
     # Catch any data transaction exception then execute and commit UPDATE_SET_IS_COMMITTED again.
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
 
 def mark_expired_sessions_committed_x(object_class):
@@ -215,7 +215,7 @@ def mark_expired_sessions_committed_x(object_class):
     assert 0 == cursor.lastrowid
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     return rowcount
 
@@ -270,7 +270,7 @@ def test_get_committed_sc_0():
     assert 1 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Product)
@@ -294,7 +294,7 @@ def test_get_committed_sc_1():
     assert 1 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Product)
@@ -318,7 +318,7 @@ def test_get_committed_sc_0_1():
     assert 2 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Product)
@@ -342,7 +342,7 @@ def test_get_committed_sc_1_0():
     assert 2 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Product)
@@ -366,7 +366,7 @@ def test_get_committed_sc_1_1():
     assert 2 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Product)
@@ -395,7 +395,7 @@ def test_get_committed_sc_1101100():
     assert 7 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Product)
@@ -424,7 +424,7 @@ def test_get_committed_sc_0010011():
     assert 7 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Product)
@@ -450,7 +450,7 @@ def test_get_committed_sc_mixed_object_class_1100():
     assert 4 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Setting)
@@ -478,7 +478,7 @@ def test_get_committed_sc_mixed_object_class_0011():
     assert 4 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Setting)
@@ -506,7 +506,7 @@ def test_get_committed_sc_mixed_object_class_1010():
     assert 4 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Setting)
@@ -534,7 +534,7 @@ def test_get_committed_sc_mixed_object_class_1110():
     assert 4 == cursor.rowcount
     cnx.commit()
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Assert Result #
     committed_sc = get_committed_sc_x(Setting)
@@ -665,7 +665,7 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=Tr
         cnx.commit()
     duration = time() - start_time
     print 'pre-load duration (s) =', duration
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
     # Duration is used as an indication of row manipulation execution speed.
     # There must be enough rows to cause a long running trailing delete.
     # If this assert fails then increase the number of pre-load rows and associated test values.
@@ -689,7 +689,7 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=Tr
         stmt = """SELECT syncCount FROM SyncCount WHERE syncCount > 99998"""
         cur.execute(stmt)
         rws = cur.fetchall()
-        _close_db(cur, conn)
+        close_db(cur, conn)
         finish = time()
         q.put(finish)
         q.put(rws)
@@ -745,7 +745,7 @@ def test_mark_session_committed():
         # Errors and warnings will raise.
 
     cnx.commit()
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     # Mark session as committed.
     session_sc = SyncCount()
@@ -761,7 +761,7 @@ def test_mark_session_committed():
     rows = cursor.fetchall()
     assert 3 == len(rows)
     assert 3 == cursor.rowcount
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     assert [{'syncCount': 1, 'isCommitted': 0},
             {'syncCount': 2, 'isCommitted': 1},
@@ -813,7 +813,7 @@ def test_mark_expired_sessions_committed():
         # Errors and warnings will raise.
 
     cnx.commit()
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     rowcount = mark_expired_sessions_committed_x(Product)
 
@@ -830,7 +830,7 @@ def test_mark_expired_sessions_committed():
     rows = cursor.fetchall()
     assert 7 == len(rows)
     assert 7 == cursor.rowcount
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     assert [{'syncCount': 1, 'isCommitted': 1},
             {'syncCount': 2, 'isCommitted': 1},
@@ -939,7 +939,7 @@ def test_get_session_sc_in_parallel_long_trailing_delete():
         cnx.commit()
         # Placed outside of commit to avoid queue lock, if any.
         q.put(cursor.lastrowid)
-        _close_db(cursor, cnx)
+        close_db(cursor, cnx)
 
     def run_session_b(q):
         q.put('B Started')
@@ -958,7 +958,7 @@ def test_get_session_sc_in_parallel_long_trailing_delete():
         cnx.commit()
         # Placed outside of commit to avoid queue lock, if any.
         q.put(cursor.lastrowid)
-        _close_db(cursor, cnx)
+        close_db(cursor, cnx)
 
     a_queue = Queue()
     Process(target=run_session_a, args=(a_queue,)).start()

@@ -403,7 +403,7 @@ def execute_statements(statements, params, object_class, is_select=True):
         Log.logger.debug('MySQL error msg = %s', e.msg)
         sql_result.errno = e.errno
         sql_result.err_msg = e.msg
-        _close_db(cursor, cnx)
+        close_db(cursor, cnx)
         return sql_result
 
     if is_select:
@@ -423,7 +423,7 @@ def execute_statements(statements, params, object_class, is_select=True):
     sql_result.rowcount = cursor.rowcount
     sql_result.lastrowid = cursor.lastrowid
 
-    _close_db(cursor, cnx)
+    close_db(cursor, cnx)
 
     return sql_result
 
@@ -466,13 +466,13 @@ def open_db():
     except mysql.connector.Error as e:
         Log.logger.debug('MySQL error no = %s', e.errno)
         Log.logger.debug('MySQL error msg = %s', e.msg)
-        _close_db(None, cnx)
+        close_db(None, cnx)
         return None, None, e.errno
 
     return cursor, cnx, None
 
 
-def _close_db(cursor, cnx):
+def close_db(cursor, cnx):
     """Close the cursor and connection."""
     try:
         cursor.close()
