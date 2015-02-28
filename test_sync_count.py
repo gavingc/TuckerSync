@@ -31,7 +31,7 @@ from time import sleep, time
 from uuid import uuid4
 
 from tests import main
-from server import execute_statement, execute_statements, open_db, close_db
+from server import open_db, close_db
 from common import SyncCount
 
 
