@@ -31,7 +31,7 @@ from time import sleep, time
 from uuid import uuid4
 
 from tests import main
-from server import execute_statement, execute_statements, _open_db, _close_db
+from server import execute_statement, execute_statements, open_db, _close_db
 from common import SyncCount
 
 
@@ -49,7 +49,7 @@ def drop_create_tables():
     """Drop and create database tables helper function."""
 
     # Config opens connection with raise_on_warnings=True
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     files = ('drop-app.sql', 'drop-base.sql', 'create-base.sql', 'create-app.sql')
@@ -86,7 +86,7 @@ def drop_create_tables():
 def new_client_id():
     """New client id helper function. Inserts a user and client, returns the client id."""
 
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO User (email, password) VALUES (%s, %s)"""
@@ -114,7 +114,7 @@ def get_committed_sc_x(object_class):
 
     Allows SELECT_COMMITTED_SC statement to be tested under various sync states."""
 
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     committed_sc = SyncCount()
@@ -138,7 +138,7 @@ def get_committed_sc_x(object_class):
 def get_session_sc_x(object_class, insert_commit=True):
     """Get session sync count for object class by executing the sequence of statements."""
 
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     session_sc = SyncCount()
@@ -180,7 +180,7 @@ def get_session_sc_x(object_class, insert_commit=True):
 def mark_session_committed_x(session_sync_count):
     """Mark session as committed by executing the statements."""
 
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     # Data transaction statements would be here.
@@ -202,7 +202,7 @@ def mark_session_committed_x(session_sync_count):
 def mark_expired_sessions_committed_x(object_class):
     """Mark expired sessions as committed by executing the statements. Return rowcount."""
 
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     sc = SyncCount()
@@ -259,7 +259,7 @@ def test_get_committed_sc_0():
     drop_create_tables()
 
     # Insert Single Row with Session Marked Uncommitted #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted)
@@ -283,7 +283,7 @@ def test_get_committed_sc_1():
     drop_create_tables()
 
     # Insert Single Row with Session Marked Committed #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted)
@@ -307,7 +307,7 @@ def test_get_committed_sc_0_1():
     drop_create_tables()
 
     # Insert Uncommitted and Following Committed Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted)
@@ -331,7 +331,7 @@ def test_get_committed_sc_1_0():
     drop_create_tables()
 
     # Insert Committed and Following Uncommitted Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted)
@@ -355,7 +355,7 @@ def test_get_committed_sc_1_1():
     drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted)
@@ -379,7 +379,7 @@ def test_get_committed_sc_1101100():
     drop_create_tables()
 
     # Insert Committed and UnCommitted Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
@@ -408,7 +408,7 @@ def test_get_committed_sc_0010011():
     drop_create_tables()
 
     # Insert Committed and UnCommitted Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
@@ -437,7 +437,7 @@ def test_get_committed_sc_mixed_object_class_1100():
     drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
@@ -465,7 +465,7 @@ def test_get_committed_sc_mixed_object_class_0011():
     drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
@@ -493,7 +493,7 @@ def test_get_committed_sc_mixed_object_class_1010():
     drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
@@ -521,7 +521,7 @@ def test_get_committed_sc_mixed_object_class_1110():
     drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
@@ -651,7 +651,7 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=Tr
     drop_create_tables()
 
     # Pre-load Rows to Create a Long Trailing Delete #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
     statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
     params = (obj_classes[0].__name__, 1)
@@ -684,7 +684,7 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=Tr
         q.put('B Started')
         get_session_sc_x(obj_classes[1], insert_commit=insert_commit)
         # Get sync count list
-        cur, conn, err = _open_db()
+        cur, conn, err = open_db()
         assert None == err
         stmt = """SELECT syncCount FROM SyncCount WHERE syncCount > 99998"""
         cur.execute(stmt)
@@ -727,7 +727,7 @@ def test_mark_session_committed():
     drop_create_tables()
 
     # Insert a Range of Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     # Insert sessions:
@@ -754,7 +754,7 @@ def test_mark_session_committed():
     mark_session_committed_x(session_sc)
 
     # Insert a Range of Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
     statement = """SELECT syncCount, isCommitted FROM SyncCount ORDER BY syncCount"""
     cursor.execute(statement)
@@ -779,7 +779,7 @@ def test_mark_expired_sessions_committed():
     drop_create_tables()
 
     # Insert a Range of Expired and Current Session Rows #
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
 
     # Insert sessions:
@@ -823,7 +823,7 @@ def test_mark_expired_sessions_committed():
     assert 4 == rowcount
 
     # Check rows.
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
     statement = """SELECT syncCount, isCommitted FROM SyncCount ORDER BY syncCount"""
     cursor.execute(statement)
@@ -879,7 +879,7 @@ def test_session_sequence_repeating():
 
     statement = """SELECT syncCount, objectClass, isCommitted FROM SyncCount"""
 
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
     cursor.execute(statement)
     rows = cursor.fetchall()
@@ -899,7 +899,7 @@ def test_session_sequence_mixed_object_class():
 
     statement = """SELECT syncCount, objectClass, isCommitted FROM SyncCount"""
 
-    cursor, cnx, errno = _open_db()
+    cursor, cnx, errno = open_db()
     assert None == errno
     cursor.execute(statement)
     rows = cursor.fetchall()
@@ -925,7 +925,7 @@ def test_get_session_sc_in_parallel_long_trailing_delete():
         q.put(session_sc)
 
         # Insert Object Class Rows #
-        cursor, cnx, errno = _open_db()
+        cursor, cnx, errno = open_db()
         assert None == errno
 
         # Simulate long running data transaction
@@ -947,7 +947,7 @@ def test_get_session_sc_in_parallel_long_trailing_delete():
         q.put(session_sc)
 
         # Insert Object Class Rows #
-        cursor, cnx, errno = _open_db()
+        cursor, cnx, errno = open_db()
         assert None == errno
 
         statement = """INSERT INTO Product (clientId, clientObjectId, lastSync, name)

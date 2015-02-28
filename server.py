@@ -388,7 +388,7 @@ def execute_statements(statements, params, object_class, is_select=True):
 
     sql_result = SQLResult()
 
-    cursor, cnx, sql_result.errno = _open_db()
+    cursor, cnx, sql_result.errno = open_db()
 
     if sql_result.errno:
         return sql_result
@@ -452,7 +452,7 @@ def handle_user_sql_result_error(sql_result):
         return APIErrorResponse.INTERNAL_SERVER_ERROR
 
 
-def _open_db():
+def open_db():
     """Open the connection and cursor. Return cursor, cnx, errno."""
     try:
         cnx = mysql.connector.connect(**db_config)
