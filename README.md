@@ -2,7 +2,7 @@ Tucker Sync API
 ===============
 
 Synchronisation over HTTPS, using POST and JSON.
-*Version 0.4*
+*Version 0.41*
 
 Motivation
 ----------
@@ -34,7 +34,7 @@ Sync occurs in two phases:
 **Download Phase** - client requests new and remotely changed objects from server since last sync.  
 **Upload Phase** - client uploads new and locally changed objects to the server.  
 
-The server maintains a universal sync counter (syncCount).  
+The server maintains a universal sync counter (SyncCount).  
 This is used in preference to the more fickle timestamp sometimes used in sync API.  
 
 Download Phase
@@ -43,12 +43,15 @@ Download Phase
 For each object class:
 
  - The **client** requests new and changed objects since last_sync:
-     - SELECT last_sync FROM object_class ORDER BY last_sync DESC LIMIT 1;
- - The **server** returns objects, for object_class and user where (lastSync > last_sync).
+     - SELECT last_sync FROM sync_count WHERE object_class = 'Product';
+ - The **server** returns:
+     - the committedSyncCount value, and
+     - objects for object class and user where (lastSync > last_sync).
  - For each object returned the **client**:
      - Inserts or updates the object based on server_object_id.
      - Using all of the server provided values and setting local_changes=0.
      - Hence server always wins a.k.a. first-in-first-served or discard type conflict resolution.
+ - The **client** records committedSyncCount as last_sync.
 
 Upload Phase
 ------------
@@ -61,9 +64,11 @@ For each object class:
      -  local_changes=1.
  - The **client** uploads objects to the server (where local_changes=1).
  - The **server** performs an insert on new objects (where server_object_id=0).
+    - the object's lastSync is set to the sessionSyncCount generated at the start of the session.
  - The **server** performs an update on existing objects:
-     - by server_object_id and lastSync < last_sync and client_id is authorised.
+     - by server_object_id and last_sync >= lastSync and client_id is authorised.
      - conflicts are resolved by lastSync, highest winning, since it’s a newer version.
+     - successfully updated objects will have lastSync = sessionSyncCount.
  - The **server** returns an error code and all of the objects.
  - The **client** updates local objects by clientObjectId:
      - with the supplied serverObjectId and lastSync
@@ -184,7 +189,7 @@ Message Body: JSON object containing objectClass, clientUUID and objects.
 
 *Example request body:*
 
-    {"objectClass":"product","clientUUID":"UUID","objects":[{"serverObjectId":0},{"serverObjectId":n}]}
+    {"objectClass":"product","clientUUID":"UUID","lastSync":123,"objects":[{"serverObjectId":0},{"serverObjectId":n}]}
 
 **Response**  
 Message Body: JSON object containing error and objects.
@@ -282,7 +287,7 @@ Since the server may actually have received a copy during a failed sync where th
 Server Schema
 -------------
 
-syncCount - universal long (64bit) sync counter, incremented on each successful db transaction.
+syncCount - universal long (64bit) sync counter, incremented on each completed session.
 
 Required on each object class to be synced:
 
