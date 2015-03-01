@@ -69,3 +69,7 @@ Shell #2:
 
 Project files for IntelliJ IDEA or PyCharm are included.  
 Add the new virtualenv as an SDK and set it as the project SDK in project settings.
+
+**Customise**
+
+See app_model.py to define logical data objects for your application.
