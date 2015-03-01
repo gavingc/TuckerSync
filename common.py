@@ -17,7 +17,7 @@ from schematics.types import StringType, IntType, BaseType, LongType, EmailType,
 from schematics.types.compound import ListType, ModelType
 from schematics.transforms import whitelist
 
-from config import USER_PASSWORD_MIN_LEN
+from app_config import USER_PASSWORD_MIN_LEN
 
 
 class Logger(object):

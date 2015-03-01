@@ -7,7 +7,7 @@
 scratch.py
 
 # Local config.
-config.py
+app_config.py
 
 # Virtualenv symlink or directory (env/) and install directory (e.g. virtualenv-1.11.6)
 env

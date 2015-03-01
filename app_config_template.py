@@ -1,8 +1,8 @@
 """Tucker Sync config (template) module, used by server and client implementations.
 
 Usage:
-    Copy config-template to config.py
-    Adjust config settings below.
+    Copy app_config_template.py to app_config.py
+    Then adjust application config settings below.
 
 License:
     The MIT License (MIT), see LICENSE.txt for more details.
@@ -30,7 +30,7 @@ db_config = {'database': 'database_name',
 USER_PASSWORD_MIN_LEN = 14
 
 LOG_LEVEL = 'DEBUG'  # Default: LOG_LEVEL = 'DEBUG'
-LOG_FILE_NAME = 'tucker-sync-server.log'
+LOG_FILE_NAME = 'tucker_sync_server.log'
 
 # Set True for production.
 # Log to LOG_FILE_NAME if True, stderr if False.

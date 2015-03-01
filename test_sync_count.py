@@ -52,7 +52,7 @@ def drop_create_tables():
     cursor, cnx, errno = open_db()
     assert None == errno
 
-    files = ('drop-app.sql', 'drop-base.sql', 'create-base.sql', 'create-app.sql')
+    files = ('app_drop.sql', 'base_drop.sql', 'base_create.sql', 'app_create.sql')
 
     # MySQL generates warnings for DROP IF EXISTS statements against nonexistent tables.
     # These warnings are 'Note level'.

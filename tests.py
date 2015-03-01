@@ -23,7 +23,7 @@ from flexmock import flexmock
 import client
 from common import APIRequestType, HTTP, JSON, APIRequest, APIErrorResponse, JSONKey, \
     APIErrorCode, SyncDownRequestBody, AccountOpenRequestBody
-from config import APP_KEYS
+from app_config import APP_KEYS
 
 
 class TestCommon(object):

@@ -19,11 +19,12 @@ Then create a virtualenv that can be accessed from the project root directory (T
 
     # OR symlinked (my preference):
 
-    cd /usr/local/bin
+    mkdir -p ~/bin/
+    cd ~/bin/
     curl https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.11.6.tar.gz | tar xz
     python virtualenv-1.11.6/virtualenv.py python-virtualenv-tucker-sync
     cd TuckerSync
-    ln -s /usr/local/bin/python-virtualenv-tucker-sync env
+    ln -s ~/bin/python-virtualenv-tucker-sync env
     # rm virtualenv-1.11.6 not required in this case.
 
 **Requirements**
@@ -41,14 +42,14 @@ http://www.kromhouts.net/blog/python/python-shared-hosting/
 Copy and customise template:
 
     cd TuckerSync
-    cp config-template.py config.py
-    # Edit config.py as required.
+    cp app_config_template.py app_config.py
+    # Edit app_config.py as required.
     
 **Database**
 
 Create a MySQL database and user matching the above config.
 
-Create tables with the create.sql file.
+Create tables with the base_create.sql and app_create.sql files.
 
 ***Run Server and Tests***
 

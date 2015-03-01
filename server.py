@@ -20,7 +20,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from passlib.context import CryptContext
 
-from config import db_config, APP_KEYS, PRODUCTION, LOG_FILE_NAME, LOG_LEVEL
+from app_config import db_config, APP_KEYS, PRODUCTION, LOG_FILE_NAME, LOG_LEVEL
 from common import JSON, APIErrorCode, APIErrorResponse, ResponseBody, APIRequestType, \
     CONTENT_TYPE_APP_JSON, User, Client, SQLResult, BaseDataDownRequestBody, \
     SyncDownRequestBody, AccountOpenRequestBody, SyncUpRequestBody, AccountModifyRequestBody, \
