@@ -239,9 +239,9 @@ def session_sequence_x(object_class):
     return session_sc, committed_sc
 
 
-###################################
-## Test Get Committed Sync Count ##
-###################################
+#################################
+# Test Get Committed Sync Count #
+#################################
 
 
 def test_get_committed_sc_no_rows():
@@ -543,9 +543,9 @@ def test_get_committed_sc_mixed_object_class_1110():
     assert 3 == committed_sc.sync_count
 
 
-#################################
-## Test Get Session Sync Count ##
-#################################
+###############################
+# Test Get Session Sync Count #
+###############################
 
 
 def test_get_session_sc_parallel_long_trailing_delete_insert_commit_false():
@@ -716,9 +716,9 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=Tr
     return a_finish, b_finish, a_session_sc, b_sc_list
 
 
-#################################
-## Test Mark Session Committed ##
-#################################
+###############################
+# Test Mark Session Committed #
+###############################
 
 
 def test_mark_session_committed():
@@ -768,9 +768,9 @@ def test_mark_session_committed():
             {'syncCount': 3, 'isCommitted': 0}] == rows
 
 
-#########################################
-## Test Mark Expired Session Committed ##
-#########################################
+#######################################
+# Test Mark Expired Session Committed #
+#######################################
 
 
 def test_mark_expired_sessions_committed():
@@ -841,9 +841,9 @@ def test_mark_expired_sessions_committed():
             {'syncCount': 7, 'isCommitted': 0}] == rows
 
 
-####################
-## Test Sequences ##
-####################
+##################
+# Test Sequences #
+##################
 
 
 def test_session_sequence():
