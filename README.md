@@ -1,11 +1,13 @@
 Tucker Sync API
 ===============
 
-Synchronisation over HTTPS, using POST and JSON.
-*Version 0.41*
+Synchronisation over HTTPS, using POST and JSON.  
+*Version 0.42*
 
 Motivation
 ----------
+
+Sync logical data objects between client and server for backup, replication and sharing purposes.
 
 With the advent of multiple device per user mobile computing, synchronising data has become a very common operation. Put simply synchronisation is an expected feature of any application that works with data. While there still appears to be a dearth of complete, clearly explained patterns or sync algorithms in the open source world. This API hopes to provide a better starting point. Two way, three way and more way sync ;-)
 
@@ -31,27 +33,11 @@ Although it may be prompted to do so by another channel, for example a Cloud Mes
 
 Sync occurs in two phases:
 
-**Download Phase** - client requests new and remotely changed objects from server since last sync.  
-**Upload Phase** - client uploads new and locally changed objects to the server.  
+**Upload Phase** - client uploads locally created and changed objects to the server.  
+**Download Phase** - client downloads remotely created and changed objects from server since last sync.  
 
-The server maintains a universal sync counter (SyncCount).  
-This is used in preference to the more fickle timestamp sometimes used in sync API.  
-
-Download Phase
---------------
-
-For each object class:
-
- - The **client** requests new and changed objects since last_sync:
-     - SELECT last_sync FROM sync_count WHERE object_class = 'Product';
- - The **server** returns:
-     - the committedSyncCount value, and
-     - objects for object class and user where (lastSync > last_sync).
- - For each object returned the **client**:
-     - Inserts or updates the object based on server_object_id.
-     - Using all of the server provided values and setting local_changes=0.
-     - Hence server always wins a.k.a. first-in-first-served or discard type conflict resolution.
- - The **client** records committedSyncCount as last_sync.
+The server maintains a sync counter (SyncCount).  
+This is used in preference to the more fickle timestamp sometimes used in sync API.
 
 Upload Phase
 ------------
@@ -60,21 +46,44 @@ For each object class:
 
  - The **client** may create objects locally and must set:
      -  server_object_id=0, last_sync=0 and local_changes=1.
- - The **client** may update objects locally and must set:
+ - The **client** may change objects locally and must set:
      -  local_changes=1.
  - The **client** uploads objects to the server (where local_changes=1).
- - The **server** performs an insert on new objects (where server_object_id=0).
-    - the object's lastSync is set to the sessionSyncCount generated at the start of the session.
- - The **server** performs an update on existing objects:
-     - by server_object_id and last_sync >= lastSync and client_id is authorised.
-     - conflicts are resolved by lastSync, highest winning, since it’s a newer version.
+ - The **server** generates a sessionSyncCount at the start of the session.
+ - The **server** performs an insert of new objects (if server_object_id=0).
+     - successfully inserted objects will have lastSync = sessionSyncCount.
+ - The **server** performs an update of existing objects:
+     - by server_object_id and if last_sync >= lastSync and user is authorised.
      - successfully updated objects will have lastSync = sessionSyncCount.
- - The **server** returns an error code and all of the objects.
+ - The **server** returns an error code and the list of objects.
  - The **client** updates local objects by clientObjectId:
-     - with the supplied serverObjectId and lastSync
-     - setting local_changes=0
+     - using the server provided serverObjectId, lastSync and setting local_changes=0.
+     - where an object was not committed it's latest values are included by the server.
+     - and the client must discard local changes and update the local object.
+     - hence server always wins a.k.a. first-in-first-served or discard type conflict resolution.
+    
+Download Phase
+--------------
 
-This pattern would generally sync all objects in a class. With an arbitrary maximum data payload of say 5MB. But sync payloads could be chunked by either side if required.
+For each object class:
+
+ - The **client** requests remotely created and changed objects since last_sync:
+     - SELECT last_sync FROM sync_count WHERE object_class = 'Product';
+ - The **server** returns:
+     - the committedSyncCount value,
+     - a moreObjects flag,
+     - and objects where:
+         - user is authorised
+         - and (lastSync > last_sync) 
+         - and (lastSync <= committedSyncCount)
+         - and (lastUpdatedBy != clientId).
+ - The **client**:
+     - inserts or updates the objects based on server_object_id.
+     - using all of the server provided values and setting local_changes=0.
+ - The **client** records committedSyncCount as last_sync.
+
+The client performs batches of uploads until it has no more local changes and then may perform downloads. The client repeatedly downloads batches until the 
+moreObjects flag is false. Batch size should be selected to remain below the maximum payload limit (e.g. 1000 objects < 5MB or 1 object < 15MB). The server can limit the committedSyncCount value to limit the batch size.
 
 UUIDs are not used to identify objects due to their size impact on the client. Instead the client generates a single UUID to identify itself to the server and sends it’s local id for each object thus allowing the server to identify duplicate new objects. Achieved by setting a unique constraint, see Server Schema.
 
@@ -91,9 +100,9 @@ https://api.app.example.com/
 Test Request
 ------------
 
-**Summary** - Test the connection and server availability.
+**Summary** - Test the connection, server availability and user authentication.
 
-**Function** - The test function will perform some basic availability tests on the server and reply with the appropriate error value. The client should inspect the API error code to determine that the server is available and functioning correctly. This call can be useful when first contacting the server, or after a failed communication to check the server before trying again. The matching API error code will be returned to indicate whether authentication succeeded or not and thus both connection and authentication can be checked separately.
+The test function will perform some basic availability tests on the server and reply with the appropriate error value. The client should inspect the API error code to determine that the server is available and functioning. This call can be useful when first contacting the server, or after a failed communication to check the server before trying again. The matching API error code will be returned to indicate whether authentication succeeded or not and thus both connection and authentication can be checked separately.
 
 **Request**  
 Query: ?type=test  
@@ -120,12 +129,12 @@ Base Data Download Request
 
 **Summary** - Download base data objects for class.
 
-**Function** - A server may provide a set of base data for an object class. This request does not require authentication (email and password). But does require the application key.
+A server may provide a set of base data for an object class. This request does not require authentication (email and password). But does require the application key.
 
 **Request**  
 Query: ?type=baseDataDown  
 Method: POST  
-Message Body: JSON object containing objectClass, lastSync and clientUUID.
+Message Body: JSON object containing objectClass, clientUUID and lastSync.
 
 *Example request URL:*
 
@@ -136,24 +145,27 @@ Message Body: JSON object containing objectClass, lastSync and clientUUID.
     {"objectClass":"product","clientUUID":"UUID","lastSync":123}
 
 **Response**  
-Message Body: JSON object containing error and objects.
+Message Body: JSON object containing error, committedSyncCount, moreObjects flag and objects.
 
 *Example response code:* 200  
 *Example response body:*
 
-    {"error":0,"objects":[{"serverObjectId":1,"lastSync":124},{"serverObjectId":n}]}
-
+    {
+        "error":0,
+        "committedSyncCount": 125
+        "moreObjects":1,
+        "objects":[{"serverObjectId":1,"lastSync":125},{"serverObjectId":n}]
+    }
+    
 Sync Download Request
 ---------------------
 
-**Summary** - Synchronise objects for class.
-
-**Function** - Sync logical data objects between client and server for backup, replication and sharing purposes.
+**Summary** - Synchronise remotely created and changed objects since last sync.
 
 **Request**  
 Query: ?type=syncDown  
 Method: POST  
-Message Body: JSON object containing objectClass, lastSync and clientUUID.  
+Message Body: JSON object containing objectClass, clientUUID and lastSync.  
 
 *Example request URL:*
 
@@ -164,19 +176,22 @@ Message Body: JSON object containing objectClass, lastSync and clientUUID.
     {"objectClass":"product","clientUUID":"UUID","lastSync":123}
 
 **Response**  
-Message Body: JSON object containing error and objects.
+Message Body: JSON object containing error, committedSyncCount, moreObjects flag and objects.
 
 *Example response code:* 200  
 *Example response body:*
 
-    {"error":0,"objects":[{"serverObjectId":1,"lastSync":124},{"serverObjectId":n}]}
+    {
+        "error":0,
+        "committedSyncCount": 125
+        "moreObjects":1,
+        "objects":[{"serverObjectId":1,"lastSync":125},{"serverObjectId":n}]
+    }
 
 Sync Upload Request
 -------------------
 
-**Summary** - Synchronise objects for an object class.
-
-**Function** - Sync logical data objects between client and server for backup, replication and sharing purposes.
+**Summary** - Synchronise locally created and changed objects with the server.
 
 **Request**  
 Query: ?type=syncUp  
@@ -189,7 +204,7 @@ Message Body: JSON object containing objectClass, clientUUID and objects.
 
 *Example request body:*
 
-    {"objectClass":"product","clientUUID":"UUID","lastSync":123,"objects":[{"serverObjectId":0},{"serverObjectId":n}]}
+    {"objectClass":"product","clientUUID":"UUID","objects":[{"serverObjectId":0},{"serverObjectId":n}]}
 
 **Response**  
 Message Body: JSON object containing error and objects.
@@ -197,14 +212,14 @@ Message Body: JSON object containing error and objects.
 *Example response code:* 200  
 *Example response body:*  
 
-    {"error":0,"objects":[{"serverObjectId":1,"lastSync":125},{"serverObjectId":n}]}
+    {"error":0,"objects":[{"serverObjectId":1,"lastSync":124},{"serverObjectId":n}]}
 
 Account Requests
 ----------------
 
 **Summary** - Allow user to manage their account on the server.
 
-**Function** - The account open request will use the query email and password to create an account on the server, additional account data may be placed in the request body. The account close and modify requests will use the query email and password for authentication. The account modify must supply the changed values in the request body.
+The account open request will use the query email and password to create an account on the server, additional account data may be placed in the request body. The account close and modify requests will use the query email and password for authentication. The account modify must supply the changed values in the request body.
 
 **Request**  
 Query: ?type=accountOpen | accountClose | accountModify  
@@ -264,7 +279,7 @@ New local data object created on client A and backup sync to server.
 Existing local object changed on device A and updated on server.  
 Replication to client B.  
 Changed object on client B and replicated to client A.  
-(user must sync B before A changes the same object).  
+(Client B must sync before client A updates the same object).  
 Deleted object on client B and replicated to client A.  
 
 New object created by user X on client A and shared with user Y on client C.  
@@ -272,11 +287,13 @@ New object created by user X on client A and shared with user Y on client C.
 Client Schema
 -------------
 
+last_sync - long (64bit) sync counter, set to server supplied committedSyncCount on each download.
+
 Required on each object class to be synced:
 
 last_sync - long value, 0 if not synced yet, determined by server and then recorded locally by client.  
-local_changes - boolean value, set by client when there are local changed yet to be synced.  
-server_object_id - long value, 0 if not synced yet, replaced with server’s id for this object once synced.  
+local_changes - boolean value, set by client when there are local changes yet to be synced.  
+server_object_id - long value, 0 if not synced yet, replaced with the server’s id for this object once synced.  
 
 deleted - boolean value, logical deletion on each object to propagate that deletion to other clients.  
 Client may perform a cleanup run of physical deletion after sync where deleted=1 and local_changes=0.  
@@ -287,23 +304,25 @@ Since the server may actually have received a copy during a failed sync where th
 Server Schema
 -------------
 
-syncCount - universal long (64bit) sync counter, incremented on each completed session.
+syncCount - long (64bit) sync counter, incremented on each completed session.
 
 Required on each object class to be synced:
 
 id - server object id.  
-userId - required on each object?  
-clientId - the unique client id that created the object.  
-clientObjectId - the object id from the client that created the object.  
+originClientId - the unique client id that created the object.  
+originClientObjectId - the object id from the client that created the object.  
+lastUpdatedByClientId - the unique client id that last updated the object.  
+ownerUserId - the user that owns this object and may delete it.   
 lastSync - long value, 0 if not synced yet, determined by server and then recorded locally by client.  
+deleted - boolean indicating logical deletion.
 
-The clientId and clientObjectId together form a unique constraint. Allowing the server to identify duplicates that the client may resend after a response transmission fails to reach the client:
+The originClientId and originClientObjectId together form a unique constraint. Allowing the server to identify duplicates that the client may resend after a response transmission fails to reach the client:
 
-    unique index `uniqueObjectConstraint` (`clientId`,`clientObjectId`)
+    unique index `uniqueObjectConstraint` (`originClientId`,`originClientObjectId`)
 
 **Client**  
 id - identifier.  
-userId - which user does this client belong to.  
+userId - foreign key, which user does this client belong to.  
 UUID - client supplied UUID.  
 
 **User**  
@@ -311,7 +330,6 @@ id - identifier.
 email - acts as username.  
 password - standard salted and encrypted.  
 accountLevel - server side account levels: free, social (friends & family), professional/coach/trainer/elite/platinum.  
-isActive - open=true, closed=false.  
 
 Server Functions
 ----------------
@@ -389,8 +407,8 @@ OR
 Extra
 -----
 
-This document is written in the markdown (.md) format.  
-Using the dialects as supported by GitHub, Intellij IDEA and stackedit.io.  
+This document is written in markdown (.md) format.  
+Using the dialects supported by GitHub, Intellij IDEA and stackedit.io.  
 
 HTTP(S)/1.1 is used and data errors are kept separate from communication errors.
 
@@ -398,13 +416,13 @@ JSON (ECMA-404) is the data interchange format.
 JSON API (http://jsonapi.org/) looks fairly sensible although probably not thoroughly conformed to.  
 JSON Schema (http://json-schema.org/) may also be of some interest although not currently used.  
 
-Python 2.6 used for development (should then run on 2.6 - 3.3).  
+Python 2.6 used for development (should then be compatible with Python 2.6 - 3.3).  
 Web.py (http://webpy.org/) is currently used for the Python server implementation.  
 Requests is used for the Python client implementation.  
 Pytest is used for test suite.  
 Sqlite3 and MySQL are the databases used in the implementation examples.  
 
-The target PHP version will be 5.4 (should then run on >= 5.4).  
+The target PHP version will be 5.4 (should then be compatible with PHP >= 5.4).  
 
 Git of course is the SCM.  
 
@@ -435,4 +453,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-

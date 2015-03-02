@@ -266,6 +266,8 @@ class ResponseBody(Model):
     """Response body model."""
 
     error = IntType(default=0)
+    committedSyncCount = LongType(serialize_when_none=False)
+    moreObjects = BooleanType(serialize_when_none=False)
     objects = BaseType(serialize_when_none=False)
 
 

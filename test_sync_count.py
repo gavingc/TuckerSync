@@ -33,16 +33,7 @@ from uuid import uuid4
 from tests import main
 from server import open_db, close_db
 from common import SyncCount
-
-
-class Product(object):
-    """Object class model stub."""
-    pass
-
-
-class Setting(object):
-    """Object class model stub."""
-    pass
+from app_model import Setting, Product
 
 
 def drop_create_tables():
@@ -909,14 +900,14 @@ def test_session_sequence_mixed_object_class():
             {'syncCount': 10, 'objectClass': Setting.__name__, 'isCommitted': 1}] == rows
 
 
-def test_get_session_sc_in_parallel_long_trailing_delete():
+def test_get_session_sc_parallel_long_data_transaction():
     """Parallel Sessions with long running trailing delete.
 
     Session a and b are run in new processes."""
 
     from multiprocessing import Process, Queue
 
-    # client_id = new_client_id()
+    drop_create_tables()
     new_client_id()
 
     def run_session_a(q):
@@ -931,11 +922,16 @@ def test_get_session_sc_in_parallel_long_trailing_delete():
         # Simulate long running data transaction
         sleep(1)
 
-        statement = """INSERT INTO Product (clientId, clientObjectId, lastSync, name)
-                       VALUES (%s, %s, %s, %s)"""
-        # session_sc.sync_count is used as clientObjectId for convenience.
-        params = (1, session_sc.sync_count, session_sc.sync_count, 'session_a')
-        cursor.execute(statement, params)
+        product = Product()
+        product.originClientId = 1
+        # session_sc.sync_count is used as originClientObjectId for convenience.
+        product.originClientObjectId = session_sc.sync_count
+        product.lastUpdatedByClientId = 1
+        product.ownerUserId = 1
+        product.lastSync = session_sc.sync_count
+        product.name = 'session_a'
+
+        cursor.execute(Product.INSERT, product.insert_params())
         cnx.commit()
         # Placed outside of commit to avoid queue lock, if any.
         q.put(cursor.lastrowid)
@@ -950,11 +946,16 @@ def test_get_session_sc_in_parallel_long_trailing_delete():
         cursor, cnx, errno = open_db()
         assert None == errno
 
-        statement = """INSERT INTO Product (clientId, clientObjectId, lastSync, name)
-                       VALUES (%s, %s, %s, %s)"""
-        # session_sc.sync_count used as clientObjectId for convenience.
-        params = (1, session_sc.sync_count, session_sc.sync_count, 'session_b')
-        cursor.execute(statement, params)
+        product = Product()
+        product.originClientId = 1
+        # session_sc.sync_count is used as originClientObjectId for convenience.
+        product.originClientObjectId = session_sc.sync_count
+        product.lastUpdatedByClientId = 1
+        product.ownerUserId = 1
+        product.lastSync = session_sc.sync_count
+        product.name = 'session_b'
+
+        cursor.execute(Product.INSERT, product.insert_params())
         cnx.commit()
         # Placed outside of commit to avoid queue lock, if any.
         q.put(cursor.lastrowid)
@@ -979,10 +980,6 @@ def test_get_session_sc_in_parallel_long_trailing_delete():
     a_product_rowid = a_queue.get()
     b_product_rowid = b_queue.get()
     assert a_product_rowid > b_product_rowid
-
-
-# def test_get_session_sc_in_parallel_long_data_transaction():
-#         pass
 
 
 # Run main when commands read either from standard input,

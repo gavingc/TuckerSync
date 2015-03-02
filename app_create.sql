@@ -1,21 +1,27 @@
 
 CREATE TABLE Setting (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  clientId INT UNSIGNED NOT NULL,
-  clientObjectId INT UNSIGNED NOT NULL,
+  originClientId INT UNSIGNED NOT NULL,
+  originClientObjectId INT UNSIGNED NOT NULL,
+  lastUpdatedByClientId INT UNSIGNED NOT NULL,
+  ownerUserId INT UNSIGNED NOT NULL,
   lastSync BIGINT UNSIGNED NOT NULL,
+  deleted BOOL NOT NULL DEFAULT 0,
   name VARCHAR(255),
   value VARCHAR(255),
-  FOREIGN KEY (clientId) REFERENCES Client(id) ON DELETE CASCADE,
-  UNIQUE INDEX `uniqueObjectConstraint` (`clientId`,`clientObjectId`)
+  FOREIGN KEY (ownerUserId) REFERENCES User(id) ON DELETE CASCADE,
+  UNIQUE INDEX `uniqueObjectConstraint` (`originClientId`,`originClientObjectId`)
 ) ENGINE=INNODB;
 
 CREATE TABLE Product (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  clientId INT UNSIGNED NOT NULL,
-  clientObjectId INT UNSIGNED NOT NULL,
+  originClientId INT UNSIGNED NOT NULL,
+  originClientObjectId INT UNSIGNED NOT NULL,
+  lastUpdatedByClientId INT UNSIGNED NOT NULL,
+  ownerUserId INT UNSIGNED NOT NULL,
   lastSync BIGINT UNSIGNED NOT NULL,
+  deleted BOOL NOT NULL DEFAULT 0,
   name VARCHAR(255),
-  FOREIGN KEY (clientId) REFERENCES Client(id) ON DELETE CASCADE,
-  UNIQUE INDEX `uniqueObjectConstraint` (`clientId`,`clientObjectId`)
+  FOREIGN KEY (ownerUserId) REFERENCES User(id) ON DELETE CASCADE,
+  UNIQUE INDEX `uniqueObjectConstraint` (`originClientId`,`originClientObjectId`)
 ) ENGINE=INNODB;

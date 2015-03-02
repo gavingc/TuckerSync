@@ -26,49 +26,96 @@ Copyright:
 """
 
 from schematics.models import Model
-from schematics.types import StringType, LongType
+from schematics.types import StringType, LongType, BooleanType
 
 
-class Setting(Model):
-    """Setting is an example application database model."""
+class BaseAppModel(Model):
+    """Base app model class. Application model classes must inherit from this class."""
 
     rowid = LongType()
-    clientId = LongType()
-    clientObjectId = LongType()
+    originClientId = LongType()
+    originClientObjectId = LongType()
+    lastUpdatedByClientId = LongType()
+    ownerUserId = LongType()
     lastSync = LongType()
+    deleted = BooleanType(default=0)
+
+
+class Setting(BaseAppModel):
+    """Setting is an example application database model."""
+
     name = StringType()
     value = StringType()
 
-    SELECT_BY_ID = """SELECT id as rowid, clientId, clientObjectId, lastSync, name, value
+    SELECT_BY_ID = """SELECT id as rowid,
+            originClientId,
+            originClientObjectId,
+            lastUpdatedByClientId,
+            ownerUserId,
+            lastSync,
+            deleted,
+            name,
+            value
         FROM Setting WHERE id = %s"""
 
     def select_by_id_params(self):
         return self.rowid,
 
-    INSERT = """INSERT INTO Setting (clientId, clientObjectId, lastSync, name, value)
-                  VALUES (%s, %s, %s, %s, %s)"""
+    INSERT = """INSERT INTO Setting (
+            originClientId,
+            originClientObjectId,
+            lastUpdatedByClientId,
+            ownerUserId,
+            lastSync,
+            deleted,
+            name,
+            value)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
 
     def insert_params(self):
-        return self.clientId, self.clientObjectId, self.lastSync, self.name, self.value
+        return (self.originClientId,
+                self.originClientObjectId,
+                self.lastUpdatedByClientId,
+                self.ownerUserId,
+                self.lastSync,
+                self.deleted,
+                self.name,
+                self.value)
 
 
-class Product(Model):
+class Product(BaseAppModel):
     """Product is an example application database model."""
 
-    rowid = LongType()
-    clientId = LongType()
-    clientObjectId = LongType()
-    lastSync = LongType()
     name = StringType()
 
-    SELECT_BY_ID = """SELECT id as rowid, clientId, clientObjectId, lastSync, name
-        FROM Product WHERE id = %s"""
+    SELECT_BY_ID = """SELECT id as rowid,
+            originClientId,
+            originClientObjectId,
+            lastUpdatedByClientId,
+            ownerUserId,
+            lastSync,
+            deleted,
+            name
+        FROM Setting WHERE id = %s"""
 
     def select_by_id_params(self):
         return self.rowid,
 
-    INSERT = """INSERT INTO Product (clientId, clientObjectId, lastSync, name)
-                  VALUES (%s, %s, %s, %s)"""
+    INSERT = """INSERT INTO Product (
+            originClientId,
+            originClientObjectId,
+            lastUpdatedByClientId,
+            ownerUserId,
+            lastSync,
+            deleted,
+            name)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)"""
 
     def insert_params(self):
-        return self.clientId, self.clientObjectId, self.lastSync, self.name
+        return (self.originClientId,
+                self.originClientObjectId,
+                self.lastUpdatedByClientId,
+                self.ownerUserId,
+                self.lastSync,
+                self.deleted,
+                self.name)
