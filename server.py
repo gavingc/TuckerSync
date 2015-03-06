@@ -55,7 +55,7 @@ class Index(object):
 
         query = web.input(type=None)
 
-        ## Request Type ##
+        # Request Type #
         if query.type is None:
             Log.debug(self, 'query type is None.')
             Log.debug(self, 'response = malformed request.')
@@ -104,7 +104,7 @@ class Test(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        ## Auth Check ##
+        # Auth Check #
         auth_user, error_response = get_authenticated_user()
 
         if error_response:
@@ -120,9 +120,9 @@ class BaseDataDown(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        ## Auth Check Not Required ##
+        # Auth Check Not Required #
 
-        ## Request Body ##
+        # Request Body #
         request_body, error_response = get_request_body(BaseDataDownRequestBody)
 
         if error_response:
@@ -139,13 +139,13 @@ class SyncDown(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        ## Auth Check ##
+        # Auth Check #
         auth_user, error_response = get_authenticated_user()
 
         if error_response:
             return error_response
 
-        ## Request Body ##
+        # Request Body #
         request_body, error_response = get_request_body(SyncDownRequestBody)
 
         if error_response:
@@ -162,13 +162,13 @@ class SyncUp(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        ## Auth Check ##
+        # Auth Check #
         auth_user, error_response = get_authenticated_user()
 
         if error_response:
             return error_response
 
-        ## Request Body ##
+        # Request Body #
         request_body, error_response = get_request_body(SyncUpRequestBody)
 
         if error_response:
@@ -185,7 +185,7 @@ class AccountOpen(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        ## New User ##
+        # New User #
         query = web.input(email=None, password=None)
 
         new_user = User()
@@ -209,17 +209,17 @@ class AccountOpen(object):
         # Hash password before database insertion.
         new_user.password = password_context().encrypt(new_user.password)
 
-        ## Request Body ##
+        # Request Body #
         request_body, error_response = get_request_body(AccountOpenRequestBody)
 
         if error_response:
             return error_response
 
-        ## New Client ##
+        # New Client #
         client = Client()
         client.UUID = request_body.clientUUID
 
-        ## Execute Inserts ##
+        # Execute Inserts #
         statements = (User.INSERT, Client.INSERT_BY_LAST_INSERT_ID)
         params = (new_user.insert_params(), client.insert_by_last_insert_id_params())
 
@@ -240,13 +240,13 @@ class AccountClose(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        ## Auth Check ##
+        # Auth Check #
         auth_user, error_response = get_authenticated_user()
 
         if error_response:
             return error_response
 
-        ## Execute Delete ##
+        # Execute Delete #
         statement = User.DELETE
         params = auth_user.delete_params()
 
@@ -267,13 +267,13 @@ class AccountModify(object):
     def POST(self):
         Log.debug(self, 'POST')
 
-        ## Auth Check ##
+        # Auth Check #
         auth_user, error_response = get_authenticated_user()
 
         if error_response:
             return error_response
 
-        ## Request Body ##
+        # Request Body #
         request_body, error_response = get_request_body(AccountModifyRequestBody)
 
         if error_response:
@@ -303,7 +303,7 @@ class AccountModify(object):
         Log.debug(self, 'mod_user.email = %s' % mod_user.email)
         Log.debug(self, 'mod_user.password = %s' % mod_user.password)
 
-        ## Execute Update ##
+        # Execute Update #
         statement = User.UPDATE_BY_EMAIL
         params = mod_user.update_by_email_params(auth_user.email)
 
@@ -488,7 +488,7 @@ def close_db(cursor, cnx):
 def get_request_body(model_class):
     """Get the request body as a model instance. Return request_body and error_response."""
 
-    ## Get json object (Python Dictionary) from request body. ##
+    # Get json object (Python Dictionary) from request body. #
     jo, error_response = get_json_object()
 
     if error_response:
@@ -665,7 +665,7 @@ def begin_request_processor(handle):
         # App key not required.
         return handle()
 
-    ## Key Check ##
+    # Key Check #
     if query.key is None:
         Log.logger.debug('query key is None')
         Log.logger.debug('response = malformed request')
