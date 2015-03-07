@@ -678,14 +678,8 @@ def begin_request_processor(handle):
     return handle()
 
 
-def main():
-    """Run the server.
-
-    May be run from the command line or as a CGI script.
-
-    Usage:
-        ./server.py
-    """
+def logging_init():
+    """Init logging with app_config settings."""
 
     # Get log level from config.
     log_level = getattr(logging, LOG_LEVEL.upper(), None)
@@ -701,6 +695,18 @@ def main():
     else:
         from sys import stderr
         logging.basicConfig(stream=stderr, level=log_level)
+
+
+def main():
+    """Run the server.
+
+    May be run from the command line or as a CGI script.
+
+    Usage:
+        ./server.py
+    """
+
+    logging_init()
 
     app = web.application(urls, globals())
     app.add_processor(begin_request_processor)
