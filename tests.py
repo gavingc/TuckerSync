@@ -1,11 +1,23 @@
 #!env/bin/python
 
-"""Test suite for the Tucker Sync algorithm, server and client.
+"""Tucker Sync test module.
+
+Main test suite for the algorithm, server and client.
 
 Usage:
+    tests.py [-h] [--baseurl BASEURL] [-k K]
+
+Optional arguments:
+  -h, --help         show this help message and exit
+  --baseurl BASEURL  specify the server base url
+  -k K               only run tests which match the given substring expression
+
+Usage examples:
+    ./tests.py
     ./tests.py --help
-    or
-    See main().
+    ./tests.py --baseurl "http://0.0.0.0:8080/"
+    ./tests.py -k "TestIntegration or TestMultiple"
+    ./tests.py --baseurl "http://0.0.0.0:8080/" -k "Integration and not Multiple"
 
 License:
     The MIT License (MIT), see LICENSE.txt for more details.
@@ -439,30 +451,21 @@ class TestMultipleClientIntegration(object):
         assert True == client_c_result
 
 
-def main(file_name):
-    """Run the test suite.
+def get_cmd_args():
+    """Get the command line arguments."""
 
-    Accepted optional command line arguments:
-        --help to view help.
-        --baseurl BASEURL to specify the server base url.
-        -k K to only run tests which match the given substring expression.
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--baseurl", help="specify the server base url")
+    parser.add_argument("-k", help="only run tests which match the given substring expression")
 
-    Usage:
-        ./tests.py
-        ./tests.py --help
-        ./tests.py --baseurl "http://0.0.0.0:8080/"
-        ./tests.py -k "TestIntegration or TestMultiple"
-        ./tests.py --baseurl "http://0.0.0.0:8080/" -k "TestIntegration or TestMultiple"
-    """
+    return parser.parse_args()
+
+
+def get_pytest_args(file_name, cmd_args):
+    """Build and return the pytest arguments."""
 
     # PyTest argument list: verbose, exit on first failure and caplog format.
     args = ['-vx', '--log-format=%(levelname)s:%(name)s:%(message)s']
-
-    # Command line arguments.
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--baseurl", help="Specify the server base url.")
-    parser.add_argument("-k", help="Only run tests which match the given substring expression.")
-    cmd_args = parser.parse_args()
 
     # Optional command line argument specifying the server base url.
     if cmd_args.baseurl:
@@ -476,15 +479,20 @@ def main(file_name):
     if cmd_args.k:
         args.append('-k %s' % cmd_args.k)
 
+    return args
+
+
+def main(file_name):
+    """Run the test suite."""
+
+    cmd_args = get_cmd_args()
+    args = get_pytest_args(file_name, cmd_args)
+
     # Run PyTest with the supplied args.
     # Equivalent to PyTest command line:
     # env/bin/py.test -vx --log-format="%(levelname)s:%(name)s:%(message)s"
     #   --baseurl "http://0.0.0.0:8080/" tests.py -k "TestIntegration or TestMultiple"
     pytest.main(args)
-
-    # Run Clients
-    # clientA().start()
-    # clientB().start()
 
 
 # Run main when commands read either from standard input,
