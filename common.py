@@ -98,7 +98,7 @@ class Logger(object):
 
 
 # Optional module logger for this module.
-#LOG = Logger(__file__)
+# LOG = Logger(__file__)
 
 
 class APIRequestType(object):
