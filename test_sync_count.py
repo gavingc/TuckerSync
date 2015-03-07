@@ -1,6 +1,6 @@
 #!env/bin/python
 
-"""Test suite for the Tucker Sync algorithm, sync count.
+"""Tucker Sync test sync count module.
 
 The goal of this test module is to explore, document and prove the sync count and database state.
 By exercising the actual SQL statements, sequences and functions.
@@ -16,9 +16,12 @@ Where sessions a and b are run in new processes.
 This allows genuine parallel execution of the session code in Python.
 
 Usage:
+    This module uses the tests.py main function and accepts the same arguments.
+
+Usage examples:
+    ./test_sync_count.py
     ./test_sync_count.py --help
-    or
-    See main().
+    ./test_sync_count.py -k "test_get_committed_sc"
 
 License:
     The MIT License (MIT), see LICENSE.txt for more details.
@@ -32,46 +35,9 @@ from uuid import uuid4
 
 from tests import main
 from server import open_db, close_db
+from app_setup import drop_create_tables
 from common import SyncCount
 from app_model import Setting, Product
-
-
-def drop_create_tables():
-    """Drop and create database tables helper function."""
-
-    # Config opens connection with raise_on_warnings=True
-    cursor, cnx, errno = open_db()
-    assert None == errno
-
-    files = ('app_drop.sql', 'base_drop.sql', 'base_create.sql', 'app_create.sql')
-
-    # MySQL generates warnings for DROP IF EXISTS statements against nonexistent tables.
-    # These warnings are 'Note level'.
-    # http://dev.mysql.com/doc/refman/5.6/en/drop-table.html
-    # http://bugs.mysql.com/bug.php?id=2839
-    # http://dev.mysql.com/doc/refman/5.0/en/server-system-variables.html#sysvar_sql_notes
-
-    # Connector/Python has an issue/bug fetching warnings when multi=True and then actually
-    # executing multiple statements with any warnings.
-    # An InterfaceError is raised and execution cannot continue.
-
-    # To prevent this get_warnings may be disabled for multi=True, or `SET sql_notes = 0`.
-    # Setting/Clearing raise_on_warnings also sets/clears get_warnings.
-    # cnx.raise_on_warnings = False
-    # OR
-    stmt = """SET sql_notes = 0"""
-    cursor.execute(stmt)
-
-    for fl in files:
-        with open(fl) as f:
-            statements = f.read()
-
-        for result in cursor.execute(statements, multi=True):
-            # Errors will raise but no warning checking is available.
-            # MySQL warnings greater than note level may raise a misleading error.
-            assert -1 != result.rowcount
-
-    close_db(cursor, cnx)
 
 
 def new_client_id():
