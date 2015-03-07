@@ -19,9 +19,9 @@ Copyright:
 #            group_a    group_b
 APP_KEYS = ('private', 'zqX2*I#y9ctNrsCKHU3xWKwgH8#JJhtVlIb980^OVT*YQ')
 
-db_config = {'database': 'database_name',
-             'user': 'user_name',
-             'password': 'secret_here',
+db_config = {'database': 'tucker_sync_dev',
+             'user': 'tuckersyncadmin',
+             'password': 'tuckersyncadmin',
              'host': '127.0.0.1',
              'raise_on_warnings': True}
 

@@ -10,14 +10,14 @@ Currently project setup is a checkout from github:
 
 Then create a virtualenv that can be accessed from the project root directory (TuckerSync/env):
 
-    # Either directly:
+Either directly in the project directory:
 
     cd TuckerSync
     curl https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.11.6.tar.gz | tar xz
     python virtualenv-1.11.6/virtualenv.py env
     rm -R virtualenv-1.11.6
 
-    # OR symlinked (my preference):
+OR symlinked (my preference):
 
     mkdir -p ~/bin/
     cd ~/bin/
@@ -36,20 +36,30 @@ Install dependencies in the virtualenv:
 
 For more on virtualenv and also deploying see:  
 http://www.kromhouts.net/blog/python/python-shared-hosting/
-
-**Config**
-
-Copy and customise template:
-
-    cd TuckerSync
-    cp app_config_template.py app_config.py
-    # Edit app_config.py as required.
     
 **Database**
 
-Create a MySQL database and user matching the above config.
+Create a MySQL database and user:
 
-Create tables with the base_create.sql and app_create.sql files.
+    $ mysql -p -u root
+    CREATE DATABASE tucker_sync_dev;
+    USE tucker_sync_dev;
+    GRANT ALL ON tucker_sync_dev.* TO tuckersyncadmin@localhost IDENTIFIED BY 'tuckersyncadmin';
+    flush privileges;
+    quit;
+    
+Check:
+
+    $ mysql -p -u tuckersyncadmin tucker_sync_dev
+
+**Setup**
+
+Run application setup:
+
+    cd TuckerSync
+    ./app_setup.py
+    
+This will copy the template config file and create the database tables.
 
 ***Run Server and Tests***
 
