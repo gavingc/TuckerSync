@@ -233,7 +233,7 @@ class Client(object):
             LOG.debug(Client, 'Type of jo is not an object/dict.')
             raise ClientException
 
-        if not JSONKey.ERROR in jo:
+        if JSONKey.ERROR not in jo:
             LOG.debug(Client, 'The decoded jo has no `error` key.')
             raise ClientException
 
