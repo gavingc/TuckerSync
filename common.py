@@ -83,6 +83,9 @@ class Logger(object):
             self._log.debug('else object (imagine that)')
             return tag.__class__.__name__
 
+    # noinspection PyAugmentAssignment
+    # minor IntelliJ bug see: https://youtrack.jetbrains.com/issue/PY-7605
+    # noinspection should be removed when the fix filters through.
     def debug(self, tag=None, msg='', *args, **kwargs):
         """Log at the debug level with an optional tag."""
         if not self.logger.isEnabledFor(logging.DEBUG):
