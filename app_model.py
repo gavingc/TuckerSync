@@ -18,6 +18,12 @@ Usage:
     Models must be in app_model.py for automatic inclusion. But of course you can create your own
     application app_model.py file with your own license.
 
+    Import from schematics.types for available types including:
+        StringType, LongType, BooleanType, URLType, EmailType, DateType...
+
+Beware:
+    Not to accidentally override the required fields defined in BaseAppModel.
+
 License:
     The MIT License (MIT), see LICENSE.txt for more details.
 
@@ -25,20 +31,9 @@ Copyright:
     Copyright (c) 2014 Steven Tucker and Gavin Kromhout.
 """
 
-from schematics.models import Model
-from schematics.types import StringType, LongType, BooleanType
+from schematics.types import StringType
 
-
-class BaseAppModel(Model):
-    """Base app model class. Application model classes must inherit from this class."""
-
-    rowid = LongType()
-    originClientId = LongType()
-    originClientObjectId = LongType()
-    lastUpdatedByClientId = LongType()
-    ownerUserId = LongType()
-    lastSync = LongType()
-    deleted = BooleanType(default=0)
+from base_model import BaseAppModel
 
 
 class Setting(BaseAppModel):
@@ -47,75 +42,8 @@ class Setting(BaseAppModel):
     name = StringType()
     value = StringType()
 
-    SELECT_BY_ID = """SELECT id as rowid,
-            originClientId,
-            originClientObjectId,
-            lastUpdatedByClientId,
-            ownerUserId,
-            lastSync,
-            deleted,
-            name,
-            value
-        FROM Setting WHERE id = %s"""
-
-    def select_by_id_params(self):
-        return self.rowid,
-
-    INSERT = """INSERT INTO Setting (
-            originClientId,
-            originClientObjectId,
-            lastUpdatedByClientId,
-            ownerUserId,
-            lastSync,
-            deleted,
-            name,
-            value)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
-
-    def insert_params(self):
-        return (self.originClientId,
-                self.originClientObjectId,
-                self.lastUpdatedByClientId,
-                self.ownerUserId,
-                self.lastSync,
-                self.deleted,
-                self.name,
-                self.value)
-
 
 class Product(BaseAppModel):
     """Product is an example application database model."""
 
     name = StringType()
-
-    SELECT_BY_ID = """SELECT id as rowid,
-            originClientId,
-            originClientObjectId,
-            lastUpdatedByClientId,
-            ownerUserId,
-            lastSync,
-            deleted,
-            name
-        FROM Setting WHERE id = %s"""
-
-    def select_by_id_params(self):
-        return self.rowid,
-
-    INSERT = """INSERT INTO Product (
-            originClientId,
-            originClientObjectId,
-            lastUpdatedByClientId,
-            ownerUserId,
-            lastSync,
-            deleted,
-            name)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-
-    def insert_params(self):
-        return (self.originClientId,
-                self.originClientObjectId,
-                self.lastUpdatedByClientId,
-                self.ownerUserId,
-                self.lastSync,
-                self.deleted,
-                self.name)
