@@ -104,6 +104,17 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.SUCCESS == response.content
 
+    def test_post_server_account_open_email_not_unique(self, request):
+        """Test server 'accountOpen' function with existing client email (created above)."""
+        request.type = APIRequestType.ACCOUNT_OPEN
+        account_open_request_body = AccountOpenRequestBody()
+        account_open_request_body.clientUUID = uuid.uuid4()  # unique uuid
+        request.body = JSON.dumps(account_open_request_body.to_primitive())
+        response = requests.post(request.base_url, request.body,
+                                 params=request.params, headers=request.headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.EMAIL_NOT_UNIQUE == response.content
+
     def test_post_server_account_open_uuid_not_unique(self, request, account_open_request_body):
         """Test server 'accountOpen' function with existing client UUID (created above)."""
         request.type = APIRequestType.ACCOUNT_OPEN
