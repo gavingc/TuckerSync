@@ -81,7 +81,7 @@ class TestServer(object):
         """Test server 'root'."""
         response = requests.get(request.base_url, headers=request.base_headers)
         assert HTTP.OK == response.status_code
-        assert 0 < len(response.content)
+        assert 0 == len(response.content)
 
     def test_post_server_test_function_check_connection(self, request):
         """Test server 'test' function. Auth should fail due to no account on server."""
