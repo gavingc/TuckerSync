@@ -31,6 +31,7 @@ import pytest
 import requests
 import uuid
 from flexmock import flexmock
+from werkzeug.exceptions import MethodNotAllowed
 
 import client
 from common import APIRequestType, HTTP, JSON, APIRequest, APIErrorResponse, JSONKey, \
@@ -77,11 +78,12 @@ class TestServer(object):
         request.password = 'secret78901234'
         return request
 
-    def test_get_server_root(self, request):
+    def test_server_root_method_not_allowed(self, request):
         """Test server 'root'."""
         response = requests.get(request.base_url, headers=request.base_headers)
-        assert HTTP.OK == response.status_code
-        assert 0 == len(response.content)
+        assert MethodNotAllowed.code == response.status_code
+        assert 'POST' == response.headers.get('Allow')
+        assert 'Method Not Allowed' in response.content
 
     def test_post_server_test_function_check_connection(self, request):
         """Test server 'test' function. Auth should fail due to no account on server."""
