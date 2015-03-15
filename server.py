@@ -45,10 +45,10 @@ class Index(object):
     def __init__(self):
         Log.debug(self, 'init')
 
-    def GET(self):
-        Log.debug(self, 'GET')
-        Log.debug(self, 'response = Welcome to Tucker Sync API.')
-        return 'Welcome to Tucker Sync API.'
+    # def GET(self):
+    #     Log.debug(self, 'GET')
+    #     Log.debug(self, 'response = Welcome to Tucker Sync API.')
+    #     return 'Welcome to Tucker Sync API.'
 
     def POST(self):
         Log.debug(self, 'POST')
@@ -652,6 +652,16 @@ def begin_request_processor(handle):
     Log.logger.debug('------------------------------------------------------')
     Log.logger.debug('begin_request_processor')
 
+    if web.ctx.method != 'POST':
+        # Subclass web.py class.
+        # class MethodNotAllowed(web.NoMethod):
+        #     methods = ['POST']
+        #     data = 'Method Not Allowed'
+        # return MethodNotAllowed()
+
+        # return 'Method Not Allowed'
+        return web.nomethod(Index)
+
     query = web.input(type=None, key=None, email=None, password=None)
 
     Log.logger.debug('query.type = %s', query.type)
@@ -660,10 +670,6 @@ def begin_request_processor(handle):
 
     if not PRODUCTION:
         Log.logger.debug('query.password = %s', query.password)
-
-    if web.ctx.method == 'GET':
-        # App key not required.
-        return handle()
 
     # Key Check #
     if query.key is None:
