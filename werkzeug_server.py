@@ -244,7 +244,7 @@ def get_json_object(request, response):
     if content_type_fails(request, response):
         return
 
-    js = request.data
+    js = request.get_data()
     if not PRODUCTION:
         log.debug('js = %s' % js)
 
