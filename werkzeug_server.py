@@ -660,7 +660,7 @@ def route_request(request, response, holder):
 
 @Request.application
 def application(request):
-    """Application entry point.
+    """Application entry point. Return a WSGI application callable.
 
     :type request: Request
     """
@@ -680,6 +680,7 @@ def application(request):
 
     holder.cursor, holder.cnx, errno = open_db()
     if errno:
+        log.debug('response = internal server error')
         response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
         return response
 
