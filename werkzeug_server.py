@@ -28,7 +28,8 @@ from os.path import basename
 import mysql.connector
 from mysql.connector import errorcode
 from werkzeug.exceptions import MethodNotAllowed
-from werkzeug.wrappers import BaseRequest, CommonRequestDescriptorsMixin, Response
+from werkzeug.wrappers import BaseRequest, CommonRequestDescriptorsMixin, \
+    BaseResponse, CommonResponseDescriptorsMixin
 from schematics.exceptions import ValidationError
 from passlib.context import CryptContext
 
@@ -65,6 +66,10 @@ log = logging.getLogger(basename(__file__).split('.')[0])
 
 
 class Request(BaseRequest, CommonRequestDescriptorsMixin):
+    pass
+
+
+class Response(BaseResponse, CommonResponseDescriptorsMixin):
     pass
 
 
