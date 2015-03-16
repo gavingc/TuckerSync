@@ -217,12 +217,12 @@ def application_key_fails(request, response):
     if query_key is None:
         log.debug('query key is None')
         log.debug('response = malformed request')
-        response.data = APIErrorResponse.MALFORMED_REQUEST
+        response.set_data(APIErrorResponse.MALFORMED_REQUEST)
         return True
 
     if query_key not in APP_KEYS:
         log.debug('response = invalid key')
-        response.data = APIErrorResponse.INVALID_KEY
+        response.set_data(APIErrorResponse.INVALID_KEY)
         return True
 
 
@@ -232,7 +232,7 @@ def content_type_fails(request, response):
     if request.content_type != CONTENT_TYPE_APP_JSON:
         log.debug('Content-Type = %s', request.content_type)
         log.debug('Check Fail, Content-Type != %s', CONTENT_TYPE_APP_JSON)
-        response.data = APIErrorResponse.MALFORMED_REQUEST
+        response.set_data(APIErrorResponse.MALFORMED_REQUEST)
         return True
 
 
@@ -253,13 +253,13 @@ def get_json_object(request, response):
     except Exception as e:
         log.debug('JSON loads exception = %s', e)
         log.debug('response = invalid json object')
-        response.data = APIErrorResponse.INVALID_JSON_OBJECT
+        response.set_data(APIErrorResponse.INVALID_JSON_OBJECT)
         return
 
     if not type(jo) is dict:
         log.debug('type of jo is not an object/dict.')
         log.debug('response = invalid json object')
-        response.data = APIErrorResponse.INVALID_JSON_OBJECT
+        response.set_data(APIErrorResponse.INVALID_JSON_OBJECT)
         return
 
     if not PRODUCTION:
@@ -284,7 +284,7 @@ def get_request_body(request, response, model_class):
     except Exception as e:
         log.debug('instance creation exception = %s', e)
         log.debug('response = invalid json object')
-        response.data = APIErrorResponse.INVALID_JSON_OBJECT
+        response.set_data(APIErrorResponse.INVALID_JSON_OBJECT)
         return
 
     try:
@@ -292,7 +292,7 @@ def get_request_body(request, response, model_class):
     except ValidationError as e:
         log.debug('request_body validation error = %s', e)
         log.debug('response = invalid json object')
-        response.data = APIErrorResponse.INVALID_JSON_OBJECT
+        response.set_data(APIErrorResponse.INVALID_JSON_OBJECT)
         return
 
     return request_body
@@ -311,7 +311,7 @@ def pack_response(response, error, objects=None):
     except Exception as e:
         log.debug('response body validation exception = %s' % e)
         log.debug('response = internal server error')
-        response.data = APIErrorResponse.INTERNAL_SERVER_ERROR
+        response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
         return
 
     try:
@@ -319,11 +319,11 @@ def pack_response(response, error, objects=None):
     except Exception as e:
         log.debug('JSON dumps exception = %s' % e)
         log.debug('response = internal server error')
-        response.data = APIErrorResponse.INTERNAL_SERVER_ERROR
+        response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
         return
 
     log.debug('response = success + objects')
-    response.data = js
+    response.set_data(js)
 
 
 def password_context(holder):
@@ -369,7 +369,7 @@ def get_authenticated_user(request, response, holder):
     except ValidationError as e:
         log.debug('query_user validation error = %s', e)
         log.debug('response = auth fail')
-        response.data = APIErrorResponse.AUTH_FAIL
+        response.set_data(APIErrorResponse.AUTH_FAIL)
         return
 
     sql_result = execute_statement(
@@ -382,12 +382,12 @@ def get_authenticated_user(request, response, holder):
 
     if sql_result.errno:
         log.debug('response = internal server error')
-        response.data = APIErrorResponse.INTERNAL_SERVER_ERROR
+        response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
         return
 
     if not sql_result.objects:
         log.debug('response = auth fail')
-        response.data = APIErrorResponse.AUTH_FAIL
+        response.set_data(APIErrorResponse.AUTH_FAIL)
         return
 
     user_client = sql_result.objects[0]
@@ -402,7 +402,7 @@ def get_authenticated_user(request, response, holder):
 
     if not password_context(holder).verify(query_user.password, auth_user.password):
         log.debug('response = auth fail')
-        response.data = APIErrorResponse.AUTH_FAIL
+        response.set_data(APIErrorResponse.AUTH_FAIL)
         return
 
     # Append Clients #
@@ -427,7 +427,7 @@ def test(request, response, holder):
         return
 
     log.debug('response = success')
-    response.data = APIErrorResponse.SUCCESS
+    response.set_data(APIErrorResponse.SUCCESS)
 
 
 def base_data_down(request, response, holder):
@@ -503,15 +503,15 @@ def account_open(request, response, holder):
         log.debug('new_user validation error = %s' % e)
         if 'password' in e.messages:
             log.debug('response = invalid password')
-            response.data = APIErrorResponse.INVALID_PASSWORD
+            response.set_data(APIErrorResponse.INVALID_PASSWORD)
             return
         elif 'email' in e.messages:
             log.debug('response = invalid email')
-            response.data = APIErrorResponse.INVALID_EMAIL
+            response.set_data(APIErrorResponse.INVALID_EMAIL)
             return
         else:
             log.debug('response = internal server error')
-            response.data = APIErrorResponse.INTERNAL_SERVER_ERROR
+            response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
             return
 
     # Hash password before database insertion.
@@ -538,11 +538,11 @@ def account_open(request, response, holder):
     error_response = handle_user_sql_result_error(sql_result)
 
     if error_response:
-        response.data = error_response
+        response.set_data(error_response)
         return
 
     log.debug('response = success')
-    response.data = APIErrorResponse.SUCCESS
+    response.set_data(APIErrorResponse.SUCCESS)
 
 
 def account_close(request, response, holder):
@@ -564,11 +564,11 @@ def account_close(request, response, holder):
     error_response = handle_user_sql_result_error(sql_result)
 
     if error_response:
-        response.data = error_response
+        response.set_data(error_response)
         return
 
     log.debug('response = success')
-    response.data = APIErrorResponse.SUCCESS
+    response.set_data(APIErrorResponse.SUCCESS)
 
 
 def account_modify(request, response, holder):
@@ -596,15 +596,15 @@ def account_modify(request, response, holder):
         log.debug('mod_user validation error = %s' % e)
         if 'password' in e.messages:
             log.debug('response = invalid password')
-            response.data = APIErrorResponse.INVALID_PASSWORD
+            response.set_data(APIErrorResponse.INVALID_PASSWORD)
             return
         elif 'email' in e.messages:
             log.debug('response = invalid email')
-            response.data = APIErrorResponse.INVALID_EMAIL
+            response.set_data(APIErrorResponse.INVALID_EMAIL)
             return
         else:
             log.debug('response = internal server error')
-            response.data = APIErrorResponse.INTERNAL_SERVER_ERROR
+            response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
             return
 
     # Hash password before database insertion.
@@ -622,11 +622,11 @@ def account_modify(request, response, holder):
     error_response = handle_user_sql_result_error(sql_result)
 
     if error_response:
-        response.data = error_response
+        response.set_data(error_response)
         return
 
     log.debug('response = success')
-    response.data = APIErrorResponse.SUCCESS
+    response.set_data(APIErrorResponse.SUCCESS)
 
 
 def route_request(request, response, holder):
@@ -637,7 +637,7 @@ def route_request(request, response, holder):
     if t is None:
         log.debug('request type is None')
         log.debug('response = malformed request')
-        response.data = APIErrorResponse.MALFORMED_REQUEST
+        response.set_data(APIErrorResponse.MALFORMED_REQUEST)
         return
 
     if t == APIRequestType.TEST:
@@ -657,7 +657,7 @@ def route_request(request, response, holder):
     else:
         log.debug('request type match not found')
         log.debug('response = malformed request')
-        response.data = APIErrorResponse.MALFORMED_REQUEST
+        response.set_data(APIErrorResponse.MALFORMED_REQUEST)
 
 
 @Request.application
@@ -682,7 +682,7 @@ def application(request):
 
     holder.cursor, holder.cnx, errno = open_db()
     if errno:
-        response.data = APIErrorResponse.INTERNAL_SERVER_ERROR
+        response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
         return response
 
     route_request(request, response, holder)
