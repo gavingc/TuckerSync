@@ -208,9 +208,7 @@ def handle_user_sql_result_error(sql_result):
 
 
 def application_key_fails(request, response):
-    """Check the private application key.
-
-    Return True if the key fails."""
+    """Private application key check. Return True if the check fails."""
 
     query_key = request.args.get('key')
 
@@ -227,7 +225,7 @@ def application_key_fails(request, response):
 
 
 def content_type_fails(request, response):
-    """Content-Type check, return True if Content-Type check fails."""
+    """Content-Type check. Return True if the check fails."""
 
     if request.content_type != CONTENT_TYPE_APP_JSON:
         log.debug('Content-Type = %s', request.content_type)
