@@ -1,0 +1,11 @@
+Options +ExecCGI
+AddHandler cgi-script .py
+
+# Disable directory index.
+Options -Indexes
+
+# Forbid access to /env sub directory.
+Redirect 403 /env
+
+# Set DirectoryIndex or use a full Rewrite rule.
+DirectoryIndex index.py
