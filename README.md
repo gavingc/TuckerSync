@@ -417,7 +417,7 @@ JSON API (http://jsonapi.org/) looks fairly sensible although probably not thoro
 JSON Schema (http://json-schema.org/) may also be of some interest although not currently used.  
 
 Python 2.6 used for development (should then be compatible with Python 2.6 - 3.3).  
-Web.py (http://webpy.org/) is currently used for the Python server implementation.  
+Werkzeug (http://werkzeug.pocoo.org/) is currently used for the Python server implementation.  
 Requests is used for the Python client implementation.  
 Pytest is used for test suite.  
 Sqlite3 and MySQL are the databases used in the implementation examples.  

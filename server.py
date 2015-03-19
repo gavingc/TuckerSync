@@ -1,6 +1,6 @@
 #!env/bin/python
 
-"""Tucker Sync (werkzeug based) server module.
+"""Tucker Sync server module.
 
 Implemented with Werkzeug Python WSGI Utility Library.
 
@@ -9,12 +9,12 @@ Usage:
         #!env/bin/python
 
         from flup.server.cgi import WSGIServer
-        from werkzeug_server import application
+        from server import application
 
         WSGIServer(application).run()
 
     Run development server from the command line:
-        ./werkzeug_server.py
+        ./server.py
 
 License:
     The MIT License (MIT), see LICENSE.txt for more details.

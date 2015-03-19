@@ -1,3 +1,4 @@
+Werkzeug==0.10.1
 argparse==1.2.1
 flexmock==0.9.7
 flup==1.0.2
@@ -10,4 +11,3 @@ pytest-capturelog==0.7
 requests==2.4.1
 schematics==1.0-0
 six==1.8.0
-web.py==0.37

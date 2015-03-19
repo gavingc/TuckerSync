@@ -1,6 +1,6 @@
 #!env/bin/python
 
 from wsgiref.handlers import CGIHandler
-from werkzeug_server import application
+from server import application
 
 CGIHandler().run(application)
