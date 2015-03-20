@@ -5,7 +5,7 @@
 Implemented with Werkzeug Python WSGI Utility Library.
 
 Usage:
-    Launch from CGI script:
+    Launch from CGI script (see index.py and .htaccess):
         #!env/bin/python
 
         from flup.server.cgi import WSGIServer
