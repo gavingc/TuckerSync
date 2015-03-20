@@ -22,8 +22,7 @@ APP_KEYS = ('private', 'zqX2*I#y9ctNrsCKHU3xWKwgH8#JJhtVlIb980^OVT*YQ')
 db_config = {'database': 'tucker_sync_dev',
              'user': 'tuckersyncadmin',
              'password': 'tuckersyncadmin',
-             'host': '127.0.0.1',
-             'raise_on_warnings': True}
+             'host': '127.0.0.1'}
 
 # Min password length required from users.
 # Test suite requires the default of 14.

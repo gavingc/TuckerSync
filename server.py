@@ -84,6 +84,8 @@ class Holder(object):
 
 def open_db():
     """Open the connection and cursor. Return cursor, cnx, errno."""
+    db_config['raise_on_warnings'] = True
+
     try:
         cnx = mysql.connector.connect(**db_config)
     except mysql.connector.Error as e:
