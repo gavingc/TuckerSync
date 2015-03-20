@@ -53,6 +53,8 @@ def logging_init():
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
         handler = RotatingFileHandler(LOG_FILE_NAME, maxBytes=300000, backupCount=1)
+        formatter = logging.Formatter(logging.BASIC_FORMAT)
+        handler.setFormatter(formatter)
         root_logger.addHandler(handler)
     else:
         from sys import stderr
