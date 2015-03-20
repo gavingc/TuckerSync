@@ -36,8 +36,7 @@ from passlib.context import CryptContext
 from app_config import LOG_FILE_NAME, LOG_LEVEL, PRODUCTION, APP_KEYS, db_config
 from common import CONTENT_TYPE_APP_JSON, APIErrorResponse, APIRequestType, UserClient, User, \
     SQLResult, Client, JSON, AccountOpenRequestBody, SyncDownRequestBody, ResponseBody, \
-    APIErrorCode, \
-    SyncUpRequestBody, AccountModifyRequestBody, BaseDataDownRequestBody
+    APIErrorCode, SyncUpRequestBody, AccountModifyRequestBody, BaseDataDownRequestBody
 
 
 def logging_init():
