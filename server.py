@@ -668,7 +668,10 @@ def application(request):
     :type request: Request
     """
 
+    log.info('application()')
+
     if request.method != 'POST':
+        log.debug('return = Method Not Allowed')
         return MethodNotAllowed(valid_methods=['POST'])
 
     response = Response()
