@@ -1,5 +1,6 @@
 Options +ExecCGI
 AddHandler cgi-script .py
+AddHandler wsgi-script .wsgi
 
 # Disable directory index.
 Options -Indexes
@@ -8,4 +9,4 @@ Options -Indexes
 Redirect 403 /env
 
 # Set DirectoryIndex or use a full Rewrite rule.
-DirectoryIndex index.py
+DirectoryIndex index.py index.wsgi
