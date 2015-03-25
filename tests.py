@@ -35,7 +35,7 @@ from werkzeug.exceptions import MethodNotAllowed
 
 import client
 from common import APIRequestType, HTTP, JSON, APIRequest, APIErrorResponse, JSONKey, \
-    APIErrorCode, SyncDownRequestBody, AccountOpenRequestBody
+    APIErrorCode, SyncDownRequestBody, AccountOpenRequestBody, SyncUpRequestBody
 from app_config import APP_KEYS
 
 
@@ -66,6 +66,14 @@ class TestServer(object):
         rb.objectClass = 'Product'
         rb.clientUUID = account_open_request_body.clientUUID
         rb.lastSync = 0
+        return rb
+
+    @pytest.fixture(scope='class')
+    def sync_up_request_body(self, account_open_request_body):
+        rb = SyncUpRequestBody()
+        rb.objectClass = 'Product'
+        rb.clientUUID = account_open_request_body.clientUUID
+        rb.objects = []
         return rb
 
     @pytest.fixture
@@ -173,12 +181,16 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_server_sync_up_function(self, request):
+    def test_post_server_sync_up_function(self, request, sync_up_request_body):
         """Test server 'syncUp' function."""
         request.type = APIRequestType.SYNC_UP
-        response = requests.post(request.base_url, params=request.params, headers=request.headers)
+        request.body = JSON.dumps(sync_up_request_body.to_primitive())
+        response = requests.post(request.base_url, request.body,
+                                 params=request.params, headers=request.headers)
         assert HTTP.OK == response.status_code
-        # assert APIErrorResponse.MALFORMED_REQUEST == response.content
+        jo = response.json()
+        assert APIErrorCode.SUCCESS == jo[JSONKey.ERROR]
+        assert isinstance(jo[JSONKey.OBJECTS], list)
 
     def test_post_server_sync_up_function_without_content_header(self, request):
         """Test server 'syncUp' function."""
