@@ -86,12 +86,26 @@ class TestServer(object):
         req.password = 'secret78901234'
         return req
 
-    def test_server_root_method_not_allowed(self, req):
+    METHODS_NOT_ALLOWED = ['', ' ', '*', 'None',
+                           'OPTIONS', 'GET', 'HEAD', 'PUT',
+                           'PATCH', 'DELETE', 'TRACE', 'CONNECT']
+
+    @pytest.mark.parametrize("method", METHODS_NOT_ALLOWED)
+    def test_server_root_method_not_allowed(self, req, method):
         """Test server 'root'."""
-        response = requests.get(req.base_url, headers=req.base_headers)
+
+        response = requests.request(method, req.base_url, headers=req.base_headers)
+
+        # Python server (Werkzeug) correctly claims to return a 400 Bad Request.
+        # However Requests lib does not correctly parse the response.status_code
+        if method in ['', ' ']:
+            assert '400' in response.content
+            return
+
         assert MethodNotAllowed.code == response.status_code
         assert 'POST' == response.headers.get('Allow')
-        assert 'Method Not Allowed' in response.content
+        if method is not 'HEAD':
+            assert 'Method Not Allowed' in response.content
 
     def test_post_server_test_function_check_connection(self, req):
         """Test server 'test' function. Auth should fail due to no account on server."""
