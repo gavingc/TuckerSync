@@ -302,18 +302,15 @@ class TestClient(object):
         with pytest.raises(Exception):
             client_a.get_json_object(mock_response)
 
-    def test_get_json_empty_content(self, client_a, mock_response):
-        mock_response.content = ''
-        with pytest.raises(Exception):
-            client_a.get_json_object(mock_response)
+    BAD_CONTENT = ('', ' ', '*', '[]', '{}',
+                   'None', 'none', 'NONE',
+                   'Null', 'null', 'NULL',
+                   '{"error":}', '{"objects":[]}')
 
-    def test_get_json_non_object_content(self, client_a, mock_response):
-        mock_response.content = '[]'
-        with pytest.raises(Exception):
-            client_a.get_json_object(mock_response)
-
-    def test_get_json_no_error_key_content(self, client_a, mock_response):
-        mock_response.content = '{}'
+    @pytest.mark.parametrize('content', BAD_CONTENT)
+    def test_get_json_bad_content(self, client_a,
+                                  mock_response, content):
+        mock_response.content = content
         with pytest.raises(Exception):
             client_a.get_json_object(mock_response)
 
