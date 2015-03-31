@@ -281,35 +281,38 @@ class TestClient(object):
     def mock_response(self):
         return flexmock(status_code=200, content='{"error":0}')
 
-    def test_client_creation(self, client_a):
+    def test_instantiate_client_a(self, client_a):
         assert client_a
 
-    def test_client_uuid(self, client_a):
+    def test_instantiate_client_b(self, client_b):
+        assert client_b
+
+    def test_uuid_isinstance_of_uuid(self, client_a):
         assert isinstance(client_a.UUID, uuid.UUID)
 
-    def test_client_uuid_is_unique(self, client_a, client_b):
+    def test_uuid_is_unique(self, client_a, client_b):
         assert client_a.UUID != client_b.UUID
 
-    def test_client_get_json(self, client_a, mock_response):
+    def test_get_json(self, client_a, mock_response):
         jo = client_a.get_json_object(mock_response)
         assert mock_response.content == JSON.dumps(jo)
 
-    def test_client_get_json_non_ok_status_code(self, client_a, mock_response):
+    def test_get_json_non_ok_status_code(self, client_a, mock_response):
         mock_response.status_code = 401
         with pytest.raises(Exception):
             client_a.get_json_object(mock_response)
 
-    def test_client_get_json_empty_content(self, client_a, mock_response):
+    def test_get_json_empty_content(self, client_a, mock_response):
         mock_response.content = ''
         with pytest.raises(Exception):
             client_a.get_json_object(mock_response)
 
-    def test_client_get_json_non_object_content(self, client_a, mock_response):
+    def test_get_json_non_object_content(self, client_a, mock_response):
         mock_response.content = '[]'
         with pytest.raises(Exception):
             client_a.get_json_object(mock_response)
 
-    def test_client_get_json_no_error_key_content(self, client_a, mock_response):
+    def test_get_json_no_error_key_content(self, client_a, mock_response):
         mock_response.content = '{}'
         with pytest.raises(Exception):
             client_a.get_json_object(mock_response)
