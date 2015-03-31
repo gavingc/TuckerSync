@@ -31,7 +31,8 @@ import pytest
 import requests
 import uuid
 from flexmock import flexmock
-from werkzeug.exceptions import MethodNotAllowed
+from requests.exceptions import ConnectionError
+from werkzeug.exceptions import MethodNotAllowed, NotImplemented, BadRequest
 
 import client
 from common import APIRequestType, HTTP, JSON, APIRequest, APIErrorResponse, JSONKey, \
@@ -86,26 +87,50 @@ class TestServer(object):
         req.password = 'secret78901234'
         return req
 
-    METHODS_NOT_ALLOWED = ['', ' ', '*', 'None',
+    METHODS_NOT_ALLOWED = ('', ' ', '*', 'None',
                            'OPTIONS', 'GET', 'HEAD', 'PUT',
-                           'PATCH', 'DELETE', 'TRACE', 'CONNECT']
+                           'PATCH', 'DELETE', 'TRACE', 'CONNECT')
 
-    @pytest.mark.parametrize("method", METHODS_NOT_ALLOWED)
-    def test_server_root_method_not_allowed(self, req, method):
-        """Test server 'root'."""
+    @pytest.mark.parametrize('method', METHODS_NOT_ALLOWED)
+    def test_server_base_method_not_allowed(self, req, method):
+        """Test server base url for method not allowed responses."""
 
-        response = requests.request(method, req.base_url, headers=req.base_headers)
+        def assert_method_not_allowed():
+            assert MethodNotAllowed.code == response.status_code
+            if method != 'TRACE':
+                assert 'POST' == response.headers.get('Allow')
+            if method != 'HEAD':
+                assert 'Method Not Allowed' in response.content
 
-        # Python server (Werkzeug) correctly claims to return a 400 Bad Request.
-        # However Requests lib does not correctly parse the response.status_code
-        if method in ['', ' ']:
-            assert '400' in response.content
+        try:
+            response = requests.request(method, req.base_url, headers=req.base_headers)
+        except ConnectionError:
+            # For some of the methods PHP CLI may get no further than this.
+            pytest.xfail('PHP CLI server incorrectly aborts connection.')
+            assert False
+
+        if method in ('', ' '):
+            if 'Apache' in response.headers.get('Server', []):
+                # Apache responds correctly.
+                assert_method_not_allowed()
+            else:
+                # Python server (Werkzeug run_simple)
+                # only returns HTTP/0.9 - body of a 400 Bad Request.
+                mna = '405' in response.content
+                bad = '400' in response.content
+                assert mna or bad
             return
 
-        assert MethodNotAllowed.code == response.status_code
-        assert 'POST' == response.headers.get('Allow')
-        if method is not 'HEAD':
-            assert 'Method Not Allowed' in response.content
+        if method in ('None', 'CONNECT'):
+            assert response.status_code in (MethodNotAllowed.code,
+                                            NotImplemented.code,
+                                            BadRequest.code)
+            if response.status_code is MethodNotAllowed.code:
+                assert_method_not_allowed()
+            return
+
+        # All remaining methods.
+        assert_method_not_allowed()
 
     def test_post_server_test_function_check_connection(self, req):
         """Test server 'test' function. Auth should fail due to no account on server."""

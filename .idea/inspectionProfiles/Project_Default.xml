@@ -32,6 +32,7 @@
           <option value="pytest.fixture" />
           <option value="pytest.raises" />
           <option value="pytest.mark" />
+          <option value="pytest.xfail" />
         </list>
       </option>
     </inspection_tool>
