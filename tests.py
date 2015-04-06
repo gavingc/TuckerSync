@@ -245,9 +245,15 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_malformed_request_type_not_supported(self, req):
+    UNSUPPORTED_REQ_TYPE = ('', ' ', 'notSupported',
+                            '*', '%', '$', '&', '@',
+                            'None', 'none', 'NONE',
+                            'Null', 'null', 'NULL')
+
+    @pytest.mark.parametrize('req_type', UNSUPPORTED_REQ_TYPE)
+    def test_malformed_request_type_not_supported(self, req, req_type):
         """Test server when an unsupported request type is specified."""
-        req.type = 'notSupported'
+        req.type = req_type
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
