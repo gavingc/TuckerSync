@@ -92,7 +92,7 @@ class TestServer(object):
                            'PATCH', 'DELETE', 'TRACE', 'CONNECT')
 
     @pytest.mark.parametrize('method', METHODS_NOT_ALLOWED)
-    def test_server_base_method_not_allowed(self, req, method):
+    def test_method_not_allowed(self, req, method):
         """Test server base url for method not allowed responses."""
 
         def assert_method_not_allowed():
@@ -132,13 +132,13 @@ class TestServer(object):
         # All remaining methods.
         assert_method_not_allowed()
 
-    def test_post_server_test_function_check_connection(self, req):
+    def test_connection(self, req):
         """Test server 'test' function. Auth should fail due to no account on server."""
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code  # connection ok.
         assert APIErrorResponse.AUTH_FAIL == response.content
 
-    def test_post_server_account_open(self, req, account_open_request_body):
+    def test_account_open(self, req, account_open_request_body):
         """Test server 'accountOpen' function."""
         req.type = APIRequestType.ACCOUNT_OPEN
         req.body = JSON.dumps(account_open_request_body.to_primitive())
@@ -147,13 +147,13 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.SUCCESS == response.content
 
-    def test_post_server_test_function_authentication(self, req):
+    def test_authentication(self, req):
         """Test server 'test' function. Auth should pass."""
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.SUCCESS == response.content
 
-    def test_post_server_account_open_email_not_unique(self, req):
+    def test_account_open_email_not_unique(self, req):
         """Test server 'accountOpen' function with existing client email (created above)."""
         req.type = APIRequestType.ACCOUNT_OPEN
         account_open_request_body = AccountOpenRequestBody()
@@ -164,7 +164,7 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.EMAIL_NOT_UNIQUE == response.content
 
-    def test_post_server_account_open_uuid_not_unique(self, req, account_open_request_body):
+    def test_account_open_uuid_not_unique(self, req, account_open_request_body):
         """Test server 'accountOpen' function with existing client UUID (created above)."""
         req.type = APIRequestType.ACCOUNT_OPEN
         req.email = 'user2@example.com'
@@ -174,35 +174,26 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.CLIENT_UUID_NOT_UNIQUE == response.content
 
-    def test_post_server_test_function_invalid_password_too_short(self, req):
+    def test_authentication_invalid_password_too_short(self, req):
         """Test server 'test' function. Short invalid password. Auth simply fails don't leak why."""
         req.password = 'short'
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.AUTH_FAIL == response.content
 
-    def test_post_server_test_function_invalid_key(self, req):
+    INVALID_KEYS = ('', ' ', 'notPrivate',
+                    'None', 'none', 'NONE',
+                    'Null', 'null', 'NULL')
+
+    @pytest.mark.parametrize('key', INVALID_KEYS)
+    def test_invalid_key(self, req, key):
         """Test server 'test' function with an invalid key."""
-        req.key = 'notPrivate'
+        req.key = key
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.INVALID_KEY == response.content
 
-    def test_post_server_test_function_none_key(self, req):
-        """Test server 'test' function with 'None' as key."""
-        req.key = 'None'
-        response = requests.post(req.base_url, params=req.params, headers=req.headers)
-        assert HTTP.OK == response.status_code
-        assert APIErrorResponse.INVALID_KEY == response.content
-
-    def test_post_server_test_function_no_key(self, req):
-        """Test server 'test' function with no key query param."""
-        req.key = None
-        response = requests.post(req.base_url, params=req.params, headers=req.headers)
-        assert HTTP.OK == response.status_code
-        assert APIErrorResponse.MALFORMED_REQUEST == response.content
-
-    def test_post_server_sync_down_function(self, req, sync_down_request_body):
+    def test_sync_down(self, req, sync_down_request_body):
         """Test server 'syncDown' function."""
         req.type = APIRequestType.SYNC_DOWN
         req.body = JSON.dumps(sync_down_request_body.to_primitive())
@@ -213,14 +204,15 @@ class TestServer(object):
         assert APIErrorCode.SUCCESS == jo[JSONKey.ERROR]
         assert isinstance(jo[JSONKey.OBJECTS], list)
 
-    def test_post_server_sync_down_function_without_content_header(self, req):
+    def test_sync_down_without_content_header(self, req):
         """Test server 'syncDown' function."""
         req.type = APIRequestType.SYNC_DOWN
-        response = requests.post(req.base_url, params=req.params, headers=req.headers)
+        response = requests.post(req.base_url,
+                                 params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_server_sync_up_function(self, req, sync_up_request_body):
+    def test_sync_up(self, req, sync_up_request_body):
         """Test server 'syncUp' function."""
         req.type = APIRequestType.SYNC_UP
         req.body = JSON.dumps(sync_up_request_body.to_primitive())
@@ -231,35 +223,43 @@ class TestServer(object):
         assert APIErrorCode.SUCCESS == jo[JSONKey.ERROR]
         assert isinstance(jo[JSONKey.OBJECTS], list)
 
-    def test_post_server_sync_up_function_without_content_header(self, req):
+    def test_sync_up_without_content_header(self, req):
         """Test server 'syncUp' function."""
         req.type = APIRequestType.SYNC_UP
+        response = requests.post(req.base_url,
+                                 params=req.params, headers=req.headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.MALFORMED_REQUEST == response.content
+
+    def test_malformed_request_key_not_specified(self, req):
+        """Test server 'test' function with no key query param."""
+        req.key = None
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_malformed_request_type_not_specified(self, req):
+    def test_malformed_request_type_not_specified(self, req):
         """Test server when no request type is specified."""
         req.type = None
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_malformed_request_type_not_supported(self, req):
+    def test_malformed_request_type_not_supported(self, req):
         """Test server when an unsupported request type is specified."""
         req.type = 'notSupported'
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
-    def test_post_server_account_close(self, req):
+    def test_account_close(self, req):
         """Test server 'accountClose' function."""
         req.type = APIRequestType.ACCOUNT_CLOSE
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.SUCCESS == response.content
 
-    def test_post_server_test_function_authentication_closed_account(self, req):
+    def test_authentication_closed_account(self, req):
         """Test server 'test' function. Auth should fail."""
         response = requests.post(req.base_url, params=req.params, headers=req.headers)
         assert HTTP.OK == response.status_code
