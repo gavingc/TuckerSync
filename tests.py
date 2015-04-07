@@ -231,6 +231,13 @@ class TestServer(object):
         assert HTTP.OK == response.status_code
         assert APIErrorResponse.MALFORMED_REQUEST == response.content
 
+    def test_authentication_email_not_specified(self, req):
+        """Test server 'test' function with no email query param."""
+        req.email = None
+        response = requests.post(req.base_url, params=req.params, headers=req.headers)
+        assert HTTP.OK == response.status_code
+        assert APIErrorResponse.AUTH_FAIL == response.content
+
     def test_malformed_request_key_not_specified(self, req):
         """Test server 'test' function with no key query param."""
         req.key = None
