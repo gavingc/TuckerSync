@@ -87,7 +87,10 @@ class TestServer(object):
         req.password = 'secret78901234'
         return req
 
-    METHODS_NOT_ALLOWED = ('', ' ', '*', 'None',
+    METHODS_NOT_ALLOWED = ('', ' ',
+                           '*', '%', '$', '&', '@',
+                           'None', 'none', 'NONE',
+                           'Null', 'null', 'NULL',
                            'OPTIONS', 'GET', 'HEAD', 'PUT',
                            'PATCH', 'DELETE', 'TRACE', 'CONNECT')
 
@@ -121,7 +124,9 @@ class TestServer(object):
                 assert mna or bad
             return
 
-        if method in ('None', 'CONNECT'):
+        if method in ('None', 'none', 'NONE',
+                      'Null', 'null', 'NULL',
+                      'CONNECT'):
             assert response.status_code in (MethodNotAllowed.code,
                                             NotImplemented.code,
                                             BadRequest.code)
@@ -182,6 +187,7 @@ class TestServer(object):
         assert APIErrorResponse.AUTH_FAIL == response.content
 
     INVALID_KEYS = ('', ' ', 'notPrivate',
+                    '*', '%', '$', '&', '@',
                     'None', 'none', 'NONE',
                     'Null', 'null', 'NULL')
 
