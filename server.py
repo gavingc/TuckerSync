@@ -33,10 +33,12 @@ from werkzeug.wrappers import BaseRequest, CommonRequestDescriptorsMixin, \
 from schematics.exceptions import ValidationError
 from passlib.context import CryptContext
 
-from app_config import LOG_FILE_NAME, LOG_LEVEL, PRODUCTION, APP_KEYS, db_config
-from common import CONTENT_TYPE_APP_JSON, APIErrorResponse, APIRequestType, UserClient, User, \
-    SQLResult, Client, JSON, AccountOpenRequestBody, SyncDownRequestBody, ResponseBody, \
-    APIErrorCode, SyncUpRequestBody, AccountModifyRequestBody, BaseDataDownRequestBody
+from app_config import LOG_FILE_NAME, LOG_LEVEL, PRODUCTION, \
+    APP_KEYS, db_config
+from common import CONTENT_TYPE_APP_JSON, APIErrorResponse, APIRequestType, \
+    UserClient, User, SQLResult, Client, JSON, AccountOpenRequestBody, \
+    SyncDownRequestBody, ResponseBody, APIErrorCode, SyncUpRequestBody, \
+    AccountModifyRequestBody, BaseDataDownRequestBody
 
 
 def logging_init():
@@ -52,7 +54,9 @@ def logging_init():
 
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
-        handler = RotatingFileHandler(LOG_FILE_NAME, maxBytes=300000, backupCount=1)
+        handler = RotatingFileHandler(LOG_FILE_NAME,
+                                      maxBytes=300000,
+                                      backupCount=1)
         formatter = logging.Formatter(logging.BASIC_FORMAT)
         handler.setFormatter(formatter)
         root_logger.addHandler(handler)
@@ -85,6 +89,7 @@ class Holder(object):
 
 def open_db():
     """Open the connection and cursor. Return cursor, cnx, errno."""
+
     db_config['raise_on_warnings'] = True
 
     try:
@@ -108,6 +113,7 @@ def open_db():
 
 def close_db(cursor, cnx):
     """Close the cursor and connection."""
+
     try:
         cursor.close()
     except Exception as e:
@@ -119,22 +125,30 @@ def close_db(cursor, cnx):
         log.debug('connection close exception = %s', e)
 
 
-def execute_statement(statement, params, object_class, holder=None, is_select=True):
-    """Convenience wrapper for execute_statements. Wraps single statement and params in tuples."""
-    return execute_statements((statement,), (params,), object_class, holder, is_select)
+def execute_statement(statement, params, object_class,
+                      holder=None, is_select=True):
+    """Convenience wrapper for execute_statements.
+
+    Wraps single statement and params in tuples."""
+
+    return execute_statements((statement,), (params,), object_class,
+                              holder, is_select)
 
 
-def execute_statements(statements, params, object_class, holder=None, is_select=True):
+def execute_statements(statements, params, object_class,
+                       holder=None, is_select=True):
     """Execute the provided SQL statements.
 
     :param tuple[str] statements: SQL statements to execute.
     :param tuple[tuple[str]] params: params to apply to statements.
-    :param object_class: schematics.models.Model class to populate results list with.
-    :param Holder holder: provides the database cnx and cursor. If none a connection is open/closed.
-    :param bool is_select: MUST be set to False for Data Manipulation Statements (
-    INSERT/DELETE/UPDATE/CREATE).
+    :param object_class: schematics.models.Model class of results list items.
+    :param Holder holder: provides the database cnx and cursor.
+    If None a connection is opened and then closed.
+    :param bool is_select: MUST be set to False for
+    Data Manipulation Statements (INSERT/DELETE/UPDATE/CREATE).
     :rtype: SQLResult
     """
+
     log.debug('execute_statements()')
     log.debug('statements = %s', statements)
     log.debug('params = %s', params)
@@ -192,6 +206,7 @@ def handle_user_sql_result_error(sql_result):
     :param SQLResult sql_result: instance of results to handle.
     :return: error_response if any, otherwise None.
     """
+
     log.debug('sql_result = %s' % sql_result.to_native())
 
     if sql_result.errno == errorcode.ER_DUP_ENTRY:
@@ -357,7 +372,9 @@ def password_context(holder):
 
 
 def get_authenticated_user(request, response, holder):
-    """Get authenticated user from database. Return auth_user, otherwise None."""
+    """Get authenticated user from database.
+
+    Return auth_user, otherwise None."""
 
     log.debug('get_authenticated_user()')
 
@@ -401,7 +418,8 @@ def get_authenticated_user(request, response, holder):
     log.debug('auth_user.email = %s', auth_user.email)
     log.debug('auth_user.password = %s', auth_user.password)
 
-    if not password_context(holder).verify(query_user.password, auth_user.password):
+    if not password_context(holder).verify(query_user.password,
+                                           auth_user.password):
         log.debug('response = auth fail')
         response.set_data(APIErrorResponse.AUTH_FAIL)
         return
@@ -705,7 +723,8 @@ def main():
 
     from werkzeug.serving import run_simple
 
-    run_simple('localhost', 8080, application, use_debugger=True, use_reloader=True)
+    run_simple('localhost', 8080, application,
+               use_debugger=True, use_reloader=True)
 
 
 # Run main when commands read either from standard input,
