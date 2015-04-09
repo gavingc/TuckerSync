@@ -1,4 +1,6 @@
-"""Tucker Sync common module, common code used by server and client implementations.
+"""Tucker Sync common module.
+
+Common code used by server and client implementations.
 
 License:
     The MIT License (MIT), see LICENSE.txt for more details.
@@ -12,8 +14,8 @@ import json
 import logging
 import os
 from schematics.models import Model
-from schematics.types import StringType, IntType, BaseType, LongType, EmailType, UUIDType, \
-    URLType, BooleanType
+from schematics.types import StringType, IntType, BaseType, LongType, \
+    EmailType, UUIDType, URLType, BooleanType
 from schematics.types.compound import ListType, ModelType
 from schematics.transforms import whitelist
 
@@ -24,7 +26,8 @@ class Logger(object):
     """Custom logger wrapper.
 
     Typical use includes the module (file) and class name in the log output.
-    By creating a module logger with the file name and adding a 'tag' to the message.
+    By creating a module logger with the file name and adding a 'tag' to the
+    message.
 
     Usage:
         # module.py:
@@ -49,7 +52,8 @@ class Logger(object):
     """
 
     # Internal class logger.
-    _log = logging.getLogger(os.path.basename(__file__).split('.')[0] + ':Logger')
+    _log = logging.getLogger(
+        os.path.basename(__file__).split('.')[0] + ':Logger')
     _log.propagate = 0
     _handler = logging.StreamHandler()
     _handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
@@ -58,7 +62,8 @@ class Logger(object):
     _log.setLevel(logging.WARN)
 
     def __init__(self, p):
-        """Given a path string like __file__ (or a custom name) init a logger."""
+        """Init logger given a path string like __file__ (or a custom name)."""
+
         self._log.debug('init')
         name = os.path.basename(p).split('.')[0]
         self._log.debug('Get logger name = %s', name)
@@ -67,8 +72,10 @@ class Logger(object):
     def get_tag(self, tag):
         """Given a tag (e.g. None, 'tag', cls, self) return None or a string.
 
-        The returned tag string is determined from the class name or string provided.
+        The returned tag string is determined from the class name or string
+        provided.
         """
+
         self._log.debug('get_tag')
         if not tag:
             self._log.debug('not tag')
@@ -88,6 +95,7 @@ class Logger(object):
     # noinspection should be removed when the fix filters through.
     def debug(self, tag=None, msg='', *args, **kwargs):
         """Log at the debug level with an optional tag."""
+
         if not self.logger.isEnabledFor(logging.DEBUG):
             return
 
@@ -141,7 +149,10 @@ class APIErrorCode(object):
 
     @classmethod
     def name(cls, error_code):
-        """Lazy reverse lookup, returns the first name that matches error_code."""
+        """Lazy reverse lookup.
+
+        Returns the first name that matches error_code."""
+
         for k, v in cls.__dict__.items():
             if v == error_code:
                 return k
@@ -150,17 +161,28 @@ class APIErrorCode(object):
 class APIErrorResponse(object):
     """The API error response constants."""
 
-    SUCCESS = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.SUCCESS)
-    INTERNAL_SERVER_ERROR = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INTERNAL_SERVER_ERROR)
-    MALFORMED_REQUEST = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.MALFORMED_REQUEST)
-    INVALID_KEY = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INVALID_KEY)
-    INVALID_EMAIL = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INVALID_EMAIL)
-    INVALID_PASSWORD = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INVALID_PASSWORD)
-    AUTH_FAIL = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.AUTH_FAIL)
-    INVALID_JSON_OBJECT = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.INVALID_JSON_OBJECT)
-    EMAIL_NOT_UNIQUE = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.EMAIL_NOT_UNIQUE)
-    CLIENT_UUID_NOT_UNIQUE = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.CLIENT_UUID_NOT_UNIQUE)
-    FULL_SYNC_REQUIRED = '{"%s":%s}' % (JSONKey.ERROR, APIErrorCode.FULL_SYNC_REQUIRED)
+    SUCCESS = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.SUCCESS)
+    INTERNAL_SERVER_ERROR = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.INTERNAL_SERVER_ERROR)
+    MALFORMED_REQUEST = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.MALFORMED_REQUEST)
+    INVALID_KEY = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.INVALID_KEY)
+    INVALID_EMAIL = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.INVALID_EMAIL)
+    INVALID_PASSWORD = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.INVALID_PASSWORD)
+    AUTH_FAIL = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.AUTH_FAIL)
+    INVALID_JSON_OBJECT = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.INVALID_JSON_OBJECT)
+    EMAIL_NOT_UNIQUE = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.EMAIL_NOT_UNIQUE)
+    CLIENT_UUID_NOT_UNIQUE = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.CLIENT_UUID_NOT_UNIQUE)
+    FULL_SYNC_REQUIRED = '{"%s":%s}' % (
+        JSONKey.ERROR, APIErrorCode.FULL_SYNC_REQUIRED)
 
 
 class HTTP(object):
@@ -180,16 +202,21 @@ class JSON(object):
     @staticmethod
     def dumps(obj):
         """Dump an object to a compact json string."""
+
         return json.dumps(obj, separators=JSON.COMPACT_SEPARATORS)
 
     @staticmethod
     def loads(s):
         """Load a string and return a Python native json object."""
+
         return json.loads(s)
 
     @staticmethod
     def load(fp):
-        """Load (read) a file like object and return a Python native json object."""
+        """Load (read) a file like object.
+
+        Return a Python native json object."""
+
         return json.load(fp)
 
 
@@ -202,9 +229,12 @@ class APIRequest(Model):
     email = StringType()
     password = StringType()
 
-    user_agent = StringType(serialized_name='User-Agent', default='TuckerSync')
-    accept = StringType(serialized_name='Accept', default=CONTENT_TYPE_APP_JSON)
-    content_type = StringType(serialized_name='Content-Type', default=CONTENT_TYPE_APP_JSON)
+    user_agent = StringType(serialized_name='User-Agent',
+                            default='TuckerSync')
+    accept = StringType(serialized_name='Accept',
+                        default=CONTENT_TYPE_APP_JSON)
+    content_type = StringType(serialized_name='Content-Type',
+                              default=CONTENT_TYPE_APP_JSON)
 
     body = StringType()
 
@@ -212,7 +242,9 @@ class APIRequest(Model):
         roles = {'params': whitelist('type', 'key', 'email', 'password'),
                  'base_headers': whitelist('user_agent'),
                  'accept_headers': whitelist('user_agent', 'accept'),
-                 'content_headers': whitelist('user_agent', 'accept', 'content_type')}
+                 'content_headers': whitelist('user_agent',
+                                              'accept',
+                                              'content_type')}
 
     @property
     def params(self):
@@ -293,8 +325,10 @@ class SyncCount(Model):
 
     # Select committed sync count by object class.
     # Operation:
-    # Select the uncommitted sessions for object class and return the lowest syncCount - 1,
-    # otherwise if no uncommitted sessions return the highest sync count for object class,
+    # Select the uncommitted sessions for object class and return the lowest
+    # syncCount - 1,
+    # otherwise if no uncommitted sessions return the highest sync count for
+    # object class,
     # otherwise if no records return 0.
     SELECT_COMMITTED_SC = """SELECT
             CASE WHEN COUNT(*) THEN MIN(syncCount) - 1
@@ -335,11 +369,11 @@ class SyncCount(Model):
     # Operation:
     # First a new uncommitted session is inserted.
     # This becomes the new sync count head marker (not committed_sc).
-    # Then trailing committed sessions are deleted to keep the table size small.
-    # Some rows are locked during the delete but insert with auto_increment will still function
-    #  for parallel sessions.
-    # The session sync count is returned from LAST_INSERT_ID() which is within the current database
-    # connection and does not read from the table.
+    # Then trailing committed sessions are deleted to minimise table size.
+    # Some rows are locked during the delete but insert with auto_increment
+    # will still function for parallel sessions.
+    # The session sync count is returned from LAST_INSERT_ID() which is within
+    # the current database connection and does not read from the table.
     SELECT_SESSION_SC = (INSERT,
                          'COMMIT',
                          DELETE_TRAILING_COMMITTED,
@@ -355,25 +389,33 @@ class SyncCount(Model):
 
     # Mark session sync count as committed.
     # Marking the session committed must be atomic with the data commit.
-    # However the session must still be marked as committed after a data transaction fail/rollback.
-    # Therefore should initially be executed within the same connection and transaction as the
-    # data and again if the data transaction fails.
-    UPDATE_SET_IS_COMMITTED = """UPDATE SyncCount SET isCommitted = 1 WHERE syncCount = %s"""
+    # However the session must still be marked as committed after a data
+    # transaction fail/rollback.
+    # Therefore should initially be executed within the same connection and
+    # transaction as the data and again if the data transaction fails.
+    UPDATE_SET_IS_COMMITTED = """UPDATE SyncCount
+      SET isCommitted = 1
+      WHERE syncCount = %s"""
 
     def update_set_is_committed_params(self):
         return self.sync_count,
 
     # Mark expired past and future sessions as committed.
-    # Provides self healing from any rare cases of sessions that failed to be marked as committed.
+    # Provides self healing from any rare cases of sessions that failed to be
+    # marked as committed.
     # Configured expiry time is 1 hour 20 min.
-    # Which should allow sessions at least 20 min to commit even in the case of daylight savings
-    # being applied to server (although the UTC to local time zone may handle this effectively).
-    # The normal case of time jitter and drift/update should be handled by the expiry time.
-    # The committed rows will be deleted when the next session sync count is issued.
+    # Which should allow sessions at least 20 min to commit even in the case
+    # of daylight savings being applied to server (although the UTC to local
+    # time zone may handle this effectively).
+    # The normal case of time jitter and drift/update should be handled by the
+    # expiry time.
+    # The committed rows will be deleted when the next session sync count is
+    # issued.
     # If any rows are affected a warning should be logged:
-    WARN_EXPIRED_SESSIONS_COMMITTED = 'There were uncommitted sessions over 1 hour 20 min in the' \
-                                      ' past or future! These expired sessions (%s) have been' \
-                                      ' marked as committed.'
+    WARN_EXPIRED_SESSIONS_COMMITTED = (
+        'There were uncommitted sessions over 1 hour 20 min in the'
+        ' past or future! These expired sessions (%s) have been'
+        ' marked as committed.')
 
     UPDATE_SET_IS_COMMITTED_EXPIRED = """UPDATE SyncCount
         SET isCommitted = 1
@@ -393,7 +435,9 @@ class Client(Model):
     userId = LongType()
     UUID = UUIDType(serialized_name='clientUUID', required=True)
 
-    SELECT_BY_UUID = """SELECT id as rowid, userId, UUID FROM Client WHERE UUID = %s"""
+    SELECT_BY_UUID = """SELECT id as rowid, userId, UUID
+        FROM Client
+        WHERE UUID = %s"""
 
     def select_by_uuid_params(self):
         return self.uuid,
@@ -403,7 +447,8 @@ class Client(Model):
     def insert_params(self):
         return self.userId, str(self.UUID)
 
-    INSERT_BY_LAST_INSERT_ID = """INSERT INTO Client (userId, UUID) VALUES (LAST_INSERT_ID(), %s)"""
+    INSERT_BY_LAST_INSERT_ID = """INSERT INTO Client (userId, UUID)
+        VALUES (LAST_INSERT_ID(), %s)"""
 
     def insert_by_last_insert_id_params(self):
         return str(self.UUID),
@@ -417,7 +462,9 @@ class User(Model):
     password = StringType(min_length=USER_PASSWORD_MIN_LEN, required=True)
     clients = ListType(ModelType(Client), default=[])
 
-    SELECT_BY_EMAIL = """SELECT id as rowid, email, password FROM User WHERE email = %s"""
+    SELECT_BY_EMAIL = """SELECT id as rowid, email, password
+        FROM User
+        WHERE email = %s"""
 
     def select_by_email_params(self):
         return self.email,
@@ -427,7 +474,9 @@ class User(Model):
     def insert_params(self):
         return self.email, self.password
 
-    UPDATE_BY_EMAIL = """UPDATE User SET email = %s, password = %s  WHERE email = %s"""
+    UPDATE_BY_EMAIL = """UPDATE User
+        SET email = %s, password = %s
+        WHERE email = %s"""
 
     def update_by_email_params(self, where_email):
         return self.email, self.password, where_email
@@ -444,11 +493,12 @@ class UserClient(User):
     client_rowid = LongType()
     UUID = UUIDType()
 
-    SELECT_BY_EMAIL = """SELECT u.id AS rowid, u.email, u.password, c.id AS client_rowid, c.UUID
-                          FROM User AS u
-                          LEFT JOIN Client AS c ON c.userId = u.id
-                          WHERE u.email = %s
-                          LIMIT 100"""
+    SELECT_BY_EMAIL = """SELECT u.id AS rowid, u.email, u.password,
+          c.id AS client_rowid, c.UUID
+        FROM User AS u
+        LEFT JOIN Client AS c ON c.userId = u.id
+        WHERE u.email = %s
+        LIMIT 100"""
 
     def select_by_email_params(self):
         return self.email,

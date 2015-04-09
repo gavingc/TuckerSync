@@ -61,19 +61,22 @@ def drop_create_tables():
     cursor, cnx, errno = open_db()
     assert None == errno
 
-    files = ('app_drop.sql', 'base_drop.sql', 'base_create.sql', 'app_create.sql')
+    files = ('app_drop.sql', 'base_drop.sql',
+             'base_create.sql', 'app_create.sql')
 
-    # MySQL generates warnings for DROP IF EXISTS statements against nonexistent tables.
+    # MySQL generates warnings for DROP IF EXISTS statements against
+    # nonexistent tables.
     # These warnings are 'Note level'.
     # http://dev.mysql.com/doc/refman/5.6/en/drop-table.html
     # http://bugs.mysql.com/bug.php?id=2839
     # http://dev.mysql.com/doc/refman/5.0/en/server-system-variables.html#sysvar_sql_notes
 
-    # Connector/Python has an issue/bug fetching warnings when multi=True and then actually
-    # executing multiple statements with any warnings.
+    # Connector/Python has an issue/bug fetching warnings when multi=True and
+    # then actually executing multiple statements with any warnings.
     # An InterfaceError is raised and execution cannot continue.
 
-    # To prevent this get_warnings may be disabled for multi=True, or `SET sql_notes = 0`.
+    # To prevent this get_warnings may be disabled for multi=True, or
+    # `SET sql_notes = 0`.
     # Setting/Clearing raise_on_warnings also sets/clears get_warnings.
     # cnx.raise_on_warnings = False
     # OR
@@ -86,7 +89,8 @@ def drop_create_tables():
 
         for result in cursor.execute(statements, multi=True):
             # Errors will raise but no warning checking is available.
-            # MySQL warnings greater than note level may raise a misleading error.
+            # MySQL warnings greater than note level may raise a misleading
+            # error.
             assert -1 != result.rowcount
 
     close_db(cursor, cnx)

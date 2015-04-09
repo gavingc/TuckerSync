@@ -29,7 +29,9 @@ SEP = ',\n  '
 
 
 class BaseAppModel(Model):
-    """Base app model class. Application model classes must inherit from this class."""
+    """Base application model class.
+
+    Application model classes must inherit from this class."""
 
     # Required fields.
     # Do not override in subclasses.
@@ -59,11 +61,12 @@ class BaseAppModel(Model):
         return self.rowid,
 
     def insert(self):
+        table = self.__class__.__name__
         columns = self.keys()
         columns.remove('rowid')
         values = ('%s' for _ in xrange(len(columns)))
 
-        return '\n'.join([INSERT + ' ' + INTO + ' ' + self.__class__.__name__ + ' (',
+        return '\n'.join([INSERT + ' ' + INTO + ' ' + table + ' (',
                           '  ' + SEP.join(columns),
                           ')',
                           VALUES + ' ( ',
@@ -71,4 +74,5 @@ class BaseAppModel(Model):
                           ')'])
 
     def insert_params(self):
-        return tuple(self.get(k) for k in iterkeys(self._fields) if k is not 'rowid')
+        return tuple(
+            self.get(k) for k in iterkeys(self._fields) if k is not 'rowid')

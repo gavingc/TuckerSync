@@ -2,15 +2,17 @@
 
 """Tucker Sync test sync count module.
 
-The goal of this test module is to explore, document and prove the sync count and database state.
-By exercising the actual SQL statements, sequences and functions.
+The goal of this test module is to explore, document and prove the sync count
+and database state. By exercising the actual SQL statements, sequences and
+functions.
 
 This module is not intended to be run often or test the server function.
 
 New database connections are used for clean results between functions.
-In some cases `cursor.execute('COMMIT')` is purposely used instead of `cnx.commit()`.
-Since the 'COMMIT' statement is used in common.py statements.
-Also in the version of Connector/Python explored cnx.commit() simply executes 'COMMIT'.
+In some cases `cursor.execute('COMMIT')` is used on purpose instead of
+`cnx.commit()`. Since the 'COMMIT' statement is used in common.py statements.
+Also in the version of Connector/Python explored cnx.commit() simply executes
+'COMMIT'.
 
 Where sessions a and b are run in new processes.
 This allows genuine parallel execution of the session code in Python.
@@ -41,7 +43,9 @@ from app_model import Setting, Product
 
 
 def new_client_id():
-    """New client id helper function. Inserts a user and client, returns the client id."""
+    """New client id helper function.
+
+    Inserts a user and client, returns the client id."""
 
     cursor, cnx, errno = open_db()
     assert None == errno
@@ -49,14 +53,18 @@ def new_client_id():
     statement = """INSERT INTO User (email, password) VALUES (%s, %s)"""
 
     email = str(uuid4()) + '@example.com'
-    password = '$5$rounds=115483$3nGzDt/Fs31t064H$GgwVigNlOTBXoh2YXy0UsQEdzx.deJqLha3vpLomKm6'
+    password = ('$5$rounds=115483$3nGzDt/Fs31t064H$GgwVigNlOTBXoh2YXy0UsQEdzx'
+                '.deJqLha3vpLomKm6')
+
     # password: secret78901234
     params = (email, password)
 
     cursor.execute(statement, params)
     assert 1 == cursor.rowcount
 
-    statement = """INSERT INTO Client (userId, UUID) VALUES (LAST_INSERT_ID(), %s)"""
+    statement = """INSERT INTO Client (userId, UUID)
+                   VALUES (LAST_INSERT_ID(), %s)"""
+
     params = (str(uuid4()),)
 
     cursor.execute(statement, params)
@@ -69,7 +77,8 @@ def new_client_id():
 def get_committed_sc_x(object_class):
     """Get committed sync count for object class by executing the statement.
 
-    Allows SELECT_COMMITTED_SC statement to be tested under various sync states."""
+    Allows SELECT_COMMITTED_SC statement to be tested under various sync
+    states."""
 
     cursor, cnx, errno = open_db()
     assert None == errno
@@ -93,7 +102,7 @@ def get_committed_sc_x(object_class):
 
 
 def get_session_sc_x(object_class, insert_commit=True):
-    """Get session sync count for object class by executing the sequence of statements."""
+    """Get session sync count for object class by executing the statements."""
 
     cursor, cnx, errno = open_db()
     assert None == errno
@@ -151,13 +160,16 @@ def mark_session_committed_x(session_sync_count):
     # Commit both the data and mark the session as committed.
     cnx.commit()
 
-    # Catch any data transaction exception then execute and commit UPDATE_SET_IS_COMMITTED again.
+    # Catch any data transaction exception then execute and commit
+    # UPDATE_SET_IS_COMMITTED again.
 
     close_db(cursor, cnx)
 
 
 def mark_expired_sessions_committed_x(object_class):
-    """Mark expired sessions as committed by executing the statements. Return rowcount."""
+    """Mark expired sessions as committed by executing the statements.
+
+    Return rowcount."""
 
     cursor, cnx, errno = open_db()
     assert None == errno
@@ -202,7 +214,9 @@ def session_sequence_x(object_class):
 
 
 def test_get_committed_sc_no_rows():
-    """Test getting the committed sync count with no rows and fresh tables."""
+    """Test getting the committed sync count.
+
+    No rows and fresh tables."""
 
     drop_create_tables()
 
@@ -211,7 +225,9 @@ def test_get_committed_sc_no_rows():
 
 
 def test_get_committed_sc_0():
-    """Test getting the committed sync count with a single uncommitted session."""
+    """Test getting the committed sync count.
+
+    Single uncommitted session."""
 
     drop_create_tables()
 
@@ -235,7 +251,9 @@ def test_get_committed_sc_0():
 
 
 def test_get_committed_sc_1():
-    """Test getting the committed sync count with a single committed session."""
+    """Test getting the committed sync count.
+
+    Single committed session."""
 
     drop_create_tables()
 
@@ -259,7 +277,9 @@ def test_get_committed_sc_1():
 
 
 def test_get_committed_sc_0_1():
-    """Test getting the committed sync count with an uncommitted and following committed session."""
+    """Test getting the committed sync count.
+
+    Uncommitted and following committed session."""
 
     drop_create_tables()
 
@@ -283,7 +303,9 @@ def test_get_committed_sc_0_1():
 
 
 def test_get_committed_sc_1_0():
-    """Test getting the committed sync count with a committed and following uncommitted session."""
+    """Test getting the committed sync count.
+
+    Committed and following uncommitted session."""
 
     drop_create_tables()
 
@@ -307,7 +329,9 @@ def test_get_committed_sc_1_0():
 
 
 def test_get_committed_sc_1_1():
-    """Test getting the committed sync count with a committed and following committed session."""
+    """Test getting the committed sync count.
+
+    Committed and following committed session."""
 
     drop_create_tables()
 
@@ -331,7 +355,9 @@ def test_get_committed_sc_1_1():
 
 
 def test_get_committed_sc_1101100():
-    """Test getting the committed sync count with complex committed and uncommitted sessions."""
+    """Test getting the committed sync count.
+
+    Complex committed and uncommitted sessions."""
 
     drop_create_tables()
 
@@ -339,7 +365,9 @@ def test_get_committed_sc_1101100():
     cursor, cnx, errno = open_db()
     assert None == errno
 
-    statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
+    statement = """INSERT INTO SyncCount (objectClass, isCommitted)
+                   VALUES (%s, %s)"""
+
     seq_of_params = ((Product.__name__, 1),
                      (Product.__name__, 1),
                      (Product.__name__, 0),
@@ -360,7 +388,9 @@ def test_get_committed_sc_1101100():
 
 
 def test_get_committed_sc_0010011():
-    """Test getting the committed sync count with complex committed and uncommitted sessions."""
+    """Test getting the committed sync count.
+
+    Complex committed and uncommitted sessions."""
 
     drop_create_tables()
 
@@ -368,7 +398,9 @@ def test_get_committed_sc_0010011():
     cursor, cnx, errno = open_db()
     assert None == errno
 
-    statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
+    statement = """INSERT INTO SyncCount (objectClass, isCommitted)
+                   VALUES (%s, %s)"""
+
     seq_of_params = ((Product.__name__, 0),
                      (Product.__name__, 0),
                      (Product.__name__, 1),
@@ -397,7 +429,9 @@ def test_get_committed_sc_mixed_object_class_1100():
     cursor, cnx, errno = open_db()
     assert None == errno
 
-    statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
+    statement = """INSERT INTO SyncCount (objectClass, isCommitted)
+                   VALUES (%s, %s)"""
+
     seq_of_params = ((Setting.__name__, 1),
                      (Product.__name__, 1),
                      (Product.__name__, 0),
@@ -425,7 +459,9 @@ def test_get_committed_sc_mixed_object_class_0011():
     cursor, cnx, errno = open_db()
     assert None == errno
 
-    statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
+    statement = """INSERT INTO SyncCount (objectClass, isCommitted)
+                   VALUES (%s, %s)"""
+
     seq_of_params = ((Setting.__name__, 0),
                      (Product.__name__, 0),
                      (Product.__name__, 1),
@@ -453,7 +489,9 @@ def test_get_committed_sc_mixed_object_class_1010():
     cursor, cnx, errno = open_db()
     assert None == errno
 
-    statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
+    statement = """INSERT INTO SyncCount (objectClass, isCommitted)
+                   VALUES (%s, %s)"""
+
     seq_of_params = ((Setting.__name__, 1),
                      (Product.__name__, 0),
                      (Product.__name__, 1),
@@ -481,7 +519,9 @@ def test_get_committed_sc_mixed_object_class_1110():
     cursor, cnx, errno = open_db()
     assert None == errno
 
-    statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
+    statement = """INSERT INTO SyncCount (objectClass, isCommitted)
+                   VALUES (%s, %s)"""
+
     seq_of_params = ((Setting.__name__, 1),
                      (Product.__name__, 1),
                      (Product.__name__, 1),
@@ -506,15 +546,20 @@ def test_get_committed_sc_mixed_object_class_1110():
 
 
 def test_get_session_sc_parallel_long_trailing_delete_insert_commit_false():
-    """Results suggests that insert_commit is required.
+    """Test get session sync count in parallel.
 
-    Although a little contrived since two object classes are used leaving session b free to
-    return quickly as it's delete is not affecting the same rows as session a's delete."""
+    Long trailing delete and insert commit false.
+
+    Results suggests that insert_commit is required.
+    Although a little contrived since two object classes are used leaving
+    session b free to return quickly as it's delete is not affecting the same
+    rows as session a's delete."""
 
     obj_classes = [Product, Setting]
 
     a_finish, b_finish, a_session_sc, b_sc_list = \
-        t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=False)
+        t_get_session_sc_parallel_long_trailing_delete(obj_classes,
+                                                       insert_commit=False)
 
     print 'a_finish =', a_finish
     print 'b_finish =', b_finish
@@ -529,21 +574,27 @@ def test_get_session_sc_parallel_long_trailing_delete_insert_commit_false():
     assert 100001 == a_session_sc.sync_count
     assert [99999, 100000, 100002] == b_sc_list
 
-    # For the algorithm to operate correctly, a_session_sc should be in the list.
+    # For the algorithm to operate correctly,
+    # a_session_sc should be in the list.
     # But it is not.
     assert a_session_sc.sync_count not in b_sc_list
 
 
 def test_get_session_sc_parallel_long_trailing_delete_insert_commit_false2():
-    """Results show that without insert_commit session b's delete must wait for a's delete.
+    """Test get session sync count in parallel.
 
-    Since the same object classes are used for both sessions.
-    Also shows that b's trailing delete is very fast on the normal handful or rows."""
+    Long trailing delete and insert commit false with the same object classes.
+
+    Results show that without insert_commit session b's delete must wait for
+    a's delete. Since the same object classes are used for both sessions.
+    Also shows that b's trailing delete is very fast on the normal handful of
+    rows."""
 
     obj_classes = [Product, Product]
 
     a_finish, b_finish, a_session_sc, b_sc_list = \
-        t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=False)
+        t_get_session_sc_parallel_long_trailing_delete(obj_classes,
+                                                       insert_commit=False)
 
     print 'a_finish =', a_finish
     print 'b_finish =', b_finish
@@ -565,15 +616,20 @@ def test_get_session_sc_parallel_long_trailing_delete_insert_commit_false2():
 
 
 def test_get_session_sc_parallel_long_trailing_delete_insert_commit_true():
-    """Results show that with insert_commit session b's delete may not have to wait for a's delete.
+    """Test get session sync count in parallel.
 
-    The same object classes are used for both sessions.
-    Also shows that b's trailing delete is very fast on the normal handful or rows."""
+    Long trailing delete and insert commit true with the same object classes.
+
+    Results show that with insert_commit session b's delete may not have to
+    wait for a's delete. The same object classes are used for both sessions.
+    Also shows that b's trailing delete is very fast on the normal handful of
+    rows."""
 
     obj_classes = [Product, Product]
 
     a_finish, b_finish, a_session_sc, b_sc_list = \
-        t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=True)
+        t_get_session_sc_parallel_long_trailing_delete(obj_classes,
+                                                       insert_commit=True)
 
     print 'a_finish =', a_finish
     print 'b_finish =', b_finish
@@ -593,15 +649,16 @@ def test_get_session_sc_parallel_long_trailing_delete_insert_commit_true():
     assert a_session_sc.sync_count in b_sc_list
 
 
-def t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=True):
+def t_get_session_sc_parallel_long_trailing_delete(obj_classes,
+                                                   insert_commit=True):
     """Parallel Sessions with long running trailing delete.
 
     Session a and b are run in new processes.
-    Session a's session sync count must be visible to session b to cause b's committed sync count
-    to be lower than it.
+    Session a's session sync count must be visible to session b to cause b's
+    committed sync count to be lower than it.
 
-    Note that b's trailing delete may return quickly if it does not affect the same rows as
-    session a."""
+    Note that b's trailing delete may return quickly if it does not affect the
+    same rows as session a."""
 
     from multiprocessing import Process, Queue
 
@@ -610,7 +667,10 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=Tr
     # Pre-load Rows to Create a Long Trailing Delete #
     cursor, cnx, errno = open_db()
     assert None == errno
-    statement = """INSERT INTO SyncCount (objectClass, isCommitted) VALUES (%s, %s)"""
+
+    statement = """INSERT INTO SyncCount (objectClass, isCommitted)
+                   VALUES (%s, %s)"""
+
     params = (obj_classes[0].__name__, 1)
     seq_params = []
     for i in xrange(10000):
@@ -623,11 +683,15 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=Tr
     duration = time() - start_time
     print 'pre-load duration (s) =', duration
     close_db(cursor, cnx)
+
     # Duration is used as an indication of row manipulation execution speed.
     # There must be enough rows to cause a long running trailing delete.
-    # If this assert fails then increase the number of pre-load rows and associated test values.
+    # If this assert fails then increase the number of pre-load rows and
+    # associated test values.
     assert 5 < duration
-    # If this assert fails then decrease the number of pre-load rows and associated test values.
+
+    # If this assert fails then decrease the number of pre-load rows and
+    # associated test values.
     assert 12 > duration
 
     def run_session_a(q):
@@ -655,7 +719,8 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes, insert_commit=Tr
     Process(target=run_session_a, args=(a_queue,)).start()
     assert 'A Started' == a_queue.get()  # blocking call
 
-    # Blocking call above ensures session_a is running before starting session_b.
+    # Blocking call above ensures session_a is running before starting
+    # session_b.
 
     b_queue = Queue()
     Process(target=run_session_b, args=(b_queue,)).start()
@@ -713,7 +778,10 @@ def test_mark_session_committed():
     # Insert a Range of Session Rows #
     cursor, cnx, errno = open_db()
     assert None == errno
-    statement = """SELECT syncCount, isCommitted FROM SyncCount ORDER BY syncCount"""
+    statement = """SELECT syncCount, isCommitted
+                   FROM SyncCount
+                   ORDER BY syncCount"""
+
     cursor.execute(statement)
     rows = cursor.fetchall()
     assert 3 == len(rows)
@@ -782,7 +850,9 @@ def test_mark_expired_sessions_committed():
     # Check rows.
     cursor, cnx, errno = open_db()
     assert None == errno
-    statement = """SELECT syncCount, isCommitted FROM SyncCount ORDER BY syncCount"""
+    statement = """SELECT syncCount, isCommitted
+                   FROM SyncCount
+                   ORDER BY syncCount"""
     cursor.execute(statement)
     rows = cursor.fetchall()
     assert 7 == len(rows)
@@ -842,7 +912,9 @@ def test_session_sequence_repeating():
     rows = cursor.fetchall()
 
     # Assert Result #
-    assert [{'syncCount': 5, 'objectClass': Product.__name__, 'isCommitted': 1}] == rows
+    assert rows == [{'syncCount': 5,
+                     'objectClass': Product.__name__,
+                     'isCommitted': 1}]
 
 
 def test_session_sequence_mixed_object_class():
@@ -854,7 +926,8 @@ def test_session_sequence_mixed_object_class():
         session_sequence_x(Product)
         session_sequence_x(Setting)
 
-    statement = """SELECT syncCount, objectClass, isCommitted FROM SyncCount"""
+    statement = """SELECT syncCount, objectClass, isCommitted
+                   FROM SyncCount"""
 
     cursor, cnx, errno = open_db()
     assert None == errno
@@ -862,8 +935,12 @@ def test_session_sequence_mixed_object_class():
     rows = cursor.fetchall()
 
     # Assert Result #
-    assert [{'syncCount': 9, 'objectClass': Product.__name__, 'isCommitted': 1},
-            {'syncCount': 10, 'objectClass': Setting.__name__, 'isCommitted': 1}] == rows
+    assert rows == [{'syncCount': 9,
+                     'objectClass': Product.__name__,
+                     'isCommitted': 1},
+                    {'syncCount': 10,
+                     'objectClass': Setting.__name__,
+                     'isCommitted': 1}]
 
 
 def test_get_session_sc_parallel_long_data_transaction():
@@ -890,7 +967,8 @@ def test_get_session_sc_parallel_long_data_transaction():
 
         product = Product()
         product.originClientId = 1
-        # session_sc.sync_count is used as originClientObjectId for convenience.
+        # session_sc.sync_count is used as originClientObjectId for
+        # convenience.
         product.originClientObjectId = session_sc.sync_count
         product.lastUpdatedByClientId = 1
         product.ownerUserId = 1
@@ -914,7 +992,8 @@ def test_get_session_sc_parallel_long_data_transaction():
 
         product = Product()
         product.originClientId = 1
-        # session_sc.sync_count is used as originClientObjectId for convenience.
+        # session_sc.sync_count is used as originClientObjectId for
+        # convenience.
         product.originClientObjectId = session_sc.sync_count
         product.lastUpdatedByClientId = 1
         product.ownerUserId = 1

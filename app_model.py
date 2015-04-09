@@ -1,7 +1,7 @@
 """Application defined database model classes.
 
-Models must define the items required for the server to handle your application logical data
-objects. Follow the examples provided closely.
+Models must define the items required for the server to handle your application
+logical data objects. Follow the examples provided closely.
 
 Application models are created using Schematics:
     Python Data Structures for Humans(TM)
@@ -9,16 +9,17 @@ Application models are created using Schematics:
     http://schematics.readthedocs.org
 
 Usage:
-    Create model classes to define the logical data objects for your application.
+    Create model classes to define data objects for your application.
     Create a matching MySQL database, user, permissions and tables.
     (See app_create.sql and app_drop.sql)
     Set the database connection properties.
     (See app_config.sql)
 
-    Models must be in app_model.py for automatic inclusion. But of course you can create your own
-    application app_model.py file with your own license.
+    Models must be in app_model.py for automatic inclusion.
+    But of course you can create your own application app_model.py file with
+    your own license.
 
-    Import from schematics.types for available types including:
+    Import from schematics.types, available types including:
         StringType, LongType, BooleanType, URLType, EmailType, DateType...
 
 Beware:

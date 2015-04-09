@@ -15,8 +15,8 @@ Copyright:
 import requests
 import uuid
 
-from common import APIRequestType, JSONKey, APIErrorCode, HTTP, JSON, Logger, APIRequest, \
-    AccountOpenRequestBody, AccountModifyRequestBody
+from common import APIRequestType, JSONKey, APIErrorCode, HTTP, JSON, Logger, \
+    APIRequest, AccountOpenRequestBody, AccountModifyRequestBody
 
 LOG = Logger(__file__)
 
@@ -66,7 +66,10 @@ class Client(object):
         self.request.password = password
 
     def check_connection(self):
-        """Check the connection to the server and that it responds with an API error code."""
+        """Check the connection to the server.
+
+         Return true if the server responds with an API error code."""
+
         try:
             self.post_request(APIRequestType.TEST)
         except ClientException:
@@ -77,7 +80,8 @@ class Client(object):
         return True
 
     def check_authentication(self):
-        """Check that authentication against an account on the server succeeds."""
+        """Check authentication against an account on the server."""
+
         try:
             jo = self.post_request(APIRequestType.TEST)
         except ClientException:
@@ -87,8 +91,11 @@ class Client(object):
         error_code = jo[JSONKey.ERROR]
 
         if error_code != APIErrorCode.SUCCESS:
-            LOG.debug(self, 'Check authentication failed with API error code = %s', error_code)
-            LOG.debug(self, 'Check authentication failed with API error name = %s',
+            LOG.debug(self,
+                      'Check authentication failed with API error code = %s',
+                      error_code)
+            LOG.debug(self,
+                      'Check authentication failed with API error name = %s',
                       APIErrorCode.name(error_code))
             return False
 
@@ -97,6 +104,7 @@ class Client(object):
 
     def account_open(self):
         """Open a new account on the server."""
+
         rb = AccountOpenRequestBody()
         rb.clientUUID = self.UUID
 
@@ -111,7 +119,8 @@ class Client(object):
         error_code = jo[JSONKey.ERROR]
 
         if error_code != APIErrorCode.SUCCESS:
-            LOG.debug(self, 'Account open failed with API error code = %s', error_code)
+            LOG.debug(self, 'Account open failed with API error code = %s',
+                      error_code)
             LOG.debug(self, 'Account open failed with API error name = %s',
                       APIErrorCode.name(error_code))
             return False
@@ -121,6 +130,7 @@ class Client(object):
 
     def account_close(self):
         """Close an existing account on the server."""
+
         try:
             jo = self.post_request(APIRequestType.ACCOUNT_CLOSE)
         except ClientException:
@@ -130,7 +140,8 @@ class Client(object):
         error_code = jo[JSONKey.ERROR]
 
         if error_code != APIErrorCode.SUCCESS:
-            LOG.debug(self, 'Account close failed with API error code = %s', error_code)
+            LOG.debug(self, 'Account close failed with API error code = %s',
+                      error_code)
             LOG.debug(self, 'Account close failed with API error name = %s',
                       APIErrorCode.name(error_code))
             return False
@@ -140,6 +151,7 @@ class Client(object):
 
     def account_modify(self, new_email, new_password):
         """Modify an existing account on the server."""
+
         request_body = AccountModifyRequestBody()
         request_body.email = new_email
         request_body.password = new_password
@@ -159,7 +171,8 @@ class Client(object):
         error_code = jo[JSONKey.ERROR]
 
         if error_code != APIErrorCode.SUCCESS:
-            LOG.debug(self, 'Account modify failed with API error code = %s', error_code)
+            LOG.debug(self, 'Account modify failed with API error code = %s',
+                      error_code)
             LOG.debug(self, 'Account modify failed with API error name = %s',
                       APIErrorCode.name(error_code))
             return False
@@ -169,6 +182,7 @@ class Client(object):
 
     def get_json_request_string(self, model):
         """Get json request string from model or raise a ClientException."""
+
         # Validate before conversion.
         try:
             model.validate()
@@ -185,7 +199,10 @@ class Client(object):
         return js
 
     def post_request(self, api_request_type, data=None):
-        """Post the request and return the json object (Python dictionary) or raise an exception."""
+        """Post the request.
+
+        Return the response json object (Python dictionary) or
+        raise an exception."""
 
         self.request.type = api_request_type
         self.request.body = data
@@ -214,7 +231,9 @@ class Client(object):
 
     @staticmethod
     def get_json_object(response):
-        """Get the json object (Python dictionary) from the response or raise an exception."""
+        """Get the json object (Python dictionary) from the response.
+
+         Return jo or raise an exception."""
 
         LOG.debug(Client, 'status_code = %s', response.status_code)
         LOG.debug(Client, 'content = %s', response.content)

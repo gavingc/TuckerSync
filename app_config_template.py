@@ -1,4 +1,6 @@
-"""Tucker Sync config (template) module, used by server and client implementations.
+"""Tucker Sync config (template) module.
+
+Used by server and client implementations.
 
 Usage:
     Copy app_config_template.py to app_config.py
