@@ -798,20 +798,17 @@ def test_mark_session_committed():
 #######################################
 
 
-def test_mark_expired_sessions_committed():
-    """Test marking of expired past and future sessions as committed."""
+def insert_expired_and_current_sessions():
+    """Insert a range of expired and current sessions rows."""
 
-    drop_create_tables()
-
-    # Insert a Range of Expired and Current Session Rows #
     cursor, cnx, errno = open_db()
     assert None == errno
 
-    # Insert sessions:
-    # Expired Past  : -2 days, -1 hour 20 min.
+    # Insert (7) sessions:
+    # Expired Past  : -2 days; -1 hour 20 min.
     # Current       : -1 hour.
-    # Expired Future: 1 day 20 min, 1 hour 20min.
-    # Current       : 1 hour, now.
+    # Expired Future: 1 day 20 min; 1 hour 20min.
+    # Current       : 1 hour; now.
     statements = """INSERT INTO SyncCount (objectClass, createAt)
                    VALUES ('Product', SUBTIME(NOW(),'48:00:00'));
 
@@ -839,6 +836,14 @@ def test_mark_expired_sessions_committed():
 
     cnx.commit()
     close_db(cursor, cnx)
+
+
+def test_mark_expired_sessions_committed():
+    """Test marking of expired past and future sessions as committed."""
+
+    drop_create_tables()
+
+    insert_expired_and_current_sessions()
 
     rowcount = mark_expired_sessions_committed_x(Product)
 
