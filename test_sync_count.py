@@ -975,7 +975,7 @@ def test_get_session_sc_parallel_long_data_transaction():
         product.lastSync = session_sc.sync_count
         product.name = 'session_a'
 
-        cursor.execute(Product.INSERT, product.insert_params())
+        cursor.execute(product.insert(), product.insert_params())
         cnx.commit()
         # Placed outside of commit to avoid queue lock, if any.
         q.put(cursor.lastrowid)
@@ -1000,7 +1000,7 @@ def test_get_session_sc_parallel_long_data_transaction():
         product.lastSync = session_sc.sync_count
         product.name = 'session_b'
 
-        cursor.execute(Product.INSERT, product.insert_params())
+        cursor.execute(product.insert(), product.insert_params())
         cnx.commit()
         # Placed outside of commit to avoid queue lock, if any.
         q.put(cursor.lastrowid)
