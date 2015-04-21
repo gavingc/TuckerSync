@@ -35,9 +35,11 @@ from requests.exceptions import ConnectionError
 from werkzeug.exceptions import MethodNotAllowed, NotImplemented, BadRequest
 
 import client
+import server
+import app_model
 from common import APIRequestType, HTTP, JSON, APIRequest, APIErrorResponse, \
     JSONKey, APIErrorCode, SyncDownRequestBody, AccountOpenRequestBody, \
-    SyncUpRequestBody
+    SyncUpRequestBody, SyncCount
 from app_config import APP_KEYS
 
 
@@ -48,6 +50,37 @@ class TestCommon(object):
         assert '{"error":0}' == APIErrorResponse.SUCCESS
         assert '{"error":1}' == APIErrorResponse.INTERNAL_SERVER_ERROR
         assert '{"error":2}' == APIErrorResponse.MALFORMED_REQUEST
+
+
+class TestServerUnit(object):
+    """Server unit tests."""
+
+    @pytest.fixture
+    def holder(self):
+        holder = server.Holder()
+        holder.response = server.Response()
+        holder.cursor, holder.cnx, errno = server.open_db()
+        assert not errno
+        holder.object_class = app_model.Product
+        return holder
+
+    def test_warn_expired_sessions_committed(self, holder, caplog):
+        """Test logged warning when expired sessions are committed."""
+
+        from test_sync_count import insert_expired_and_current_sessions
+        insert_expired_and_current_sessions()
+
+        server.mark_expired_sessions_committed(holder)
+
+        logged_msg = (SyncCount.WARN_EXPIRED_SESSIONS_COMMITTED % 4) + '\n'
+
+        assert logged_msg in caplog.text()
+
+        for record in caplog.records():
+            if record.msg == logged_msg:
+                assert record.levelname == 'WARNING'
+
+        server.close_db(holder.cursor, holder.cnx)
 
 
 class TestServer(object):

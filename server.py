@@ -35,10 +35,12 @@ from passlib.context import CryptContext
 
 from app_config import LOG_FILE_NAME, LOG_LEVEL, PRODUCTION, \
     APP_KEYS, db_config
+import app_model
+from base_model import BaseAppModel
 from common import CONTENT_TYPE_APP_JSON, APIErrorResponse, APIRequestType, \
     UserClient, User, SQLResult, Client, JSON, AccountOpenRequestBody, \
-    SyncDownRequestBody, ResponseBody, APIErrorCode, SyncUpRequestBody, \
-    AccountModifyRequestBody, BaseDataDownRequestBody
+    SyncDownRequestBody, ResponseBody, SyncUpRequestBody, \
+    AccountModifyRequestBody, BaseDataDownRequestBody, SyncCount
 
 
 def logging_init():
@@ -82,9 +84,17 @@ class Holder(object):
     """Holder of the current request resources."""
 
     def __init__(self):
+        self.request = None
+        self.response = None
         self.cnx = None
         self.cursor = None
         self.password_context = None
+        self.auth_user = None
+        self.auth_client = None
+        self.object_class = None
+        self.session_sc = None
+        self.request_body = None
+        self.response_body = None
 
 
 def open_db():
@@ -125,18 +135,24 @@ def close_db(cursor, cnx):
         log.debug('connection close exception = %s', e)
 
 
-def execute_statement(statement, params, object_class,
-                      holder=None, is_select=True):
+def execute_statement(statement, params,
+                      object_class=None,
+                      holder=None,
+                      is_select=True):
     """Convenience wrapper for execute_statements.
 
     Wraps single statement and params in tuples."""
 
-    return execute_statements((statement,), (params,), object_class,
-                              holder, is_select)
+    return execute_statements((statement,), (params,),
+                              object_class=object_class,
+                              holder=holder,
+                              is_select=is_select)
 
 
-def execute_statements(statements, params, object_class,
-                       holder=None, is_select=True):
+def execute_statements(statements, params,
+                       object_class=None,
+                       holder=None,
+                       is_select=True):
     """Execute the provided SQL statements.
 
     :param tuple[str] statements: SQL statements to execute.
@@ -285,61 +301,96 @@ def get_json_object(request, response):
     return jo
 
 
-def get_request_body(request, response, model_class):
-    """Get the request body as a model instance.
+def set_request_body(req_body_cls, holder):
+    """Set holder.request_body as an instance of req_body_cls.
 
-    Return request_body, otherwise None."""
+    Return True, otherwise None."""
 
-    jo = get_json_object(request, response)
+    log.debug('set_request_body()')
 
+    jo = get_json_object(holder.request, holder.response)
     if not jo:
         return
 
     try:
-        request_body = model_class(jo)  # strict=True; jo must have exact keys.
+        # jo must have exact keys (strict=True)
+        holder.request_body = req_body_cls(jo)
     except Exception as e:
         log.debug('instance creation exception = %s', e)
         log.debug('response = invalid json object')
-        response.set_data(APIErrorResponse.INVALID_JSON_OBJECT)
+        holder.response.set_data(APIErrorResponse.INVALID_JSON_OBJECT)
         return
 
     try:
-        request_body.validate()
+        holder.request_body.validate()
     except ValidationError as e:
         log.debug('request_body validation error = %s', e)
         log.debug('response = invalid json object')
-        response.set_data(APIErrorResponse.INVALID_JSON_OBJECT)
+        holder.response.set_data(APIErrorResponse.INVALID_JSON_OBJECT)
         return
 
-    return request_body
+    return True
 
 
-def pack_response(response, error, objects=None):
-    """Pack error code and any objects into the response body."""
+def set_object_class(holder):
+    """Set holder.object_class from object class name supplied in request_body.
 
-    rb = ResponseBody()
-    rb.error = error
-    rb.objects = objects
+    Return True, otherwise None."""
+
+    log.debug('set_object_class()')
+
+    obj_cls_name = holder.request_body.objectClass
+
+    obj_cls = None
+    for name in dir(app_model):
+        if '_' not in name:
+            a = getattr(app_model, name)
+            if a.__module__ == app_model.__name__ and name == obj_cls_name:
+                obj_cls = a
+                break
+
+    if not obj_cls:
+        log.debug('app_model has no object class called: %s', obj_cls_name)
+        log.debug('response = malformed request')
+        holder.response.set_data(APIErrorResponse.MALFORMED_REQUEST)
+        return
+
+    try:
+        assert issubclass(obj_cls, BaseAppModel)
+    except Exception as e:
+        log.warn('assert issubclass exception: %s', e)
+        log.warn('"%s" is not a subclass of: %s',
+                 obj_cls_name, BaseAppModel)
+        log.warn('response = malformed request')
+        holder.response.set_data(APIErrorResponse.MALFORMED_REQUEST)
+        return
+
+    holder.object_class = obj_cls
+    return True
+
+
+def pack_response(holder):
+    """Pack response_body into the response body."""
 
     # Validate before conversion.
     try:
-        rb.validate()
+        holder.response_body.validate()
     except Exception as e:
-        log.debug('response body validation exception = %s' % e)
-        log.debug('response = internal server error')
-        response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+        log.error('response body validation exception = %s' % e)
+        log.error('response = internal server error')
+        holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
         return
 
     try:
-        js = JSON.dumps(rb.to_primitive())
+        js = JSON.dumps(holder.response_body.to_primitive())
     except Exception as e:
-        log.debug('JSON dumps exception = %s' % e)
-        log.debug('response = internal server error')
-        response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+        log.error('JSON dumps exception = %s' % e)
+        log.error('response = internal server error')
+        holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
         return
 
     log.debug('response = success + objects')
-    response.set_data(js)
+    holder.response.set_data(js)
 
 
 def password_context(holder):
@@ -371,23 +422,25 @@ def password_context(holder):
     return holder.password_context
 
 
-def get_authenticated_user(request, response, holder):
-    """Get authenticated user from database.
+def set_auth_user(holder):
+    """Set holder.auth_user by authenticating against an existing account.
 
-    Return auth_user, otherwise None."""
+    Return True, otherwise None."""
 
-    log.debug('get_authenticated_user()')
+    log.debug('set_auth_user()')
+
+    req_args = holder.request.args
 
     query_user = UserClient()
-    query_user.email = request.args.get('email')
-    query_user.password = request.args.get('password')
+    query_user.email = req_args.get('email')
+    query_user.password = req_args.get('password')
 
     try:
         query_user.validate()
     except ValidationError as e:
         log.debug('query_user validation error = %s', e)
         log.debug('response = auth fail')
-        response.set_data(APIErrorResponse.AUTH_FAIL)
+        holder.response.set_data(APIErrorResponse.AUTH_FAIL)
         return
 
     sql_result = execute_statement(
@@ -399,13 +452,13 @@ def get_authenticated_user(request, response, holder):
     log.debug('sql_result = %s', sql_result.to_native())
 
     if sql_result.errno:
-        log.debug('response = internal server error')
-        response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+        log.error('response = internal server error')
+        holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
         return
 
     if not sql_result.objects:
         log.debug('response = auth fail')
-        response.set_data(APIErrorResponse.AUTH_FAIL)
+        holder.response.set_data(APIErrorResponse.AUTH_FAIL)
         return
 
     user_client = sql_result.objects[0]
@@ -421,7 +474,7 @@ def get_authenticated_user(request, response, holder):
     if not password_context(holder).verify(query_user.password,
                                            auth_user.password):
         log.debug('response = auth fail')
-        response.set_data(APIErrorResponse.AUTH_FAIL)
+        holder.response.set_data(APIErrorResponse.AUTH_FAIL)
         return
 
     # Append Clients #
@@ -433,88 +486,258 @@ def get_authenticated_user(request, response, holder):
 
     # Success.
     log.debug('user authenticated')
-    return auth_user
+    holder.auth_user = auth_user
+    return True
 
 
-def test(request, response, holder):
+def set_auth_client(holder):
+    """Set holder.auth_client from existing or by inserting a new client.
+
+    Return True, otherwise None."""
+
+    log.debug('set_auth_client()')
+
+    for c in holder.auth_user.clients:
+        if c.UUID == holder.request_body.clientUUID:
+            holder.auth_client = c
+            return True
+
+    # Otherwise insert new client.
+    new_client = Client()
+    new_client.UUID = holder.request_body.clientUUID
+    new_client.userId = holder.auth_user.rowid
+
+    try:
+        new_client.validate()
+    except ValidationError as e:
+        log.debug('new_client validation error = %s' % e)
+        log.debug('response = malformed request')
+        holder.response.set_data(APIErrorResponse.MALFORMED_REQUEST)
+
+    sql_result = execute_statement(
+        statement=Client.INSERT,
+        params=new_client.insert_params(),
+        holder=holder,
+        is_select=False)
+
+    error_response = handle_user_sql_result_error(sql_result)
+    if error_response:
+        holder.response.set_data(error_response)
+        return
+
+    new_client.rowid = sql_result.lastrowid
+    holder.auth_client = new_client
+    return True
+
+
+def mark_expired_sessions_committed(holder):
+    """Mark expired sessions as committed. Return True, otherwise None."""
+
+    log.debug('mark_expired_sessions_committed()')
+
+    sc = SyncCount()
+    sc.object_class = holder.object_class.__name__
+
+    sql_result = execute_statement(
+        statement=SyncCount.UPDATE_SET_IS_COMMITTED_EXPIRED,
+        params=sc.update_set_is_committed_expired_params(),
+        holder=holder,
+        is_select=False)
+
+    log.debug('sql_result = %s', sql_result.to_native())
+
+    if sql_result.errno:
+        log.error('response = internal server error')
+        holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+        return
+
+    if sql_result.rowcount:
+        log.warn(SyncCount.WARN_EXPIRED_SESSIONS_COMMITTED,
+                 sql_result.rowcount)
+
+    return True
+
+
+def set_session_sc(holder):
+    """Set session sync count. Return True, otherwise None."""
+
+    log.debug('set_session_sc()')
+
+    sc = SyncCount()
+    sc.object_class = holder.object_class.__name__
+
+    sql_result = execute_statements(
+        statements=SyncCount.SELECT_SESSION_SC,
+        params=sc.select_session_sc_params(),
+        object_class=SyncCount,
+        holder=holder)
+
+    log.debug('sql_result = %s', sql_result.to_native())
+
+    if sql_result.errno:
+        log.error('response = internal server error')
+        holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+        return
+
+    if not sql_result.objects:
+        log.error('response = internal server error')
+        holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+        return
+
+    holder.session_sc = sql_result.objects[0]
+    return True
+
+
+def mark_session_committed(holder):
+    """Mark session as committed. Return True, otherwise None."""
+
+    log.debug('mark_session_committed()')
+
+    sql_result = execute_statement(
+        statement=SyncCount.UPDATE_SET_IS_COMMITTED,
+        params=holder.session_sc.update_set_is_committed_params(),
+        holder=holder,
+        is_select=False)
+
+    log.debug('sql_result = %s', sql_result.to_native())
+
+    if sql_result.errno:
+        log.error('response = internal server error')
+        holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+        return
+
+    return True
+
+
+def set_committed_sc(holder):
+    """Set committed sync count. Return True, otherwise None."""
+
+    log.debug('set_committed_sc()')
+
+    sc = SyncCount()
+    sc.object_class = holder.object_class.__name__
+
+    sql_result = execute_statement(
+        statement=SyncCount.SELECT_COMMITTED_SC,
+        params=sc.select_committed_sc_params(),
+        object_class=SyncCount,
+        holder=holder)
+
+    log.debug('sql_result = %s', sql_result.to_native())
+
+    if sql_result.errno:
+        log.error('response = internal server error')
+        holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+        return
+
+    if not sql_result.objects:
+        log.error('response = internal server error')
+        holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+        return
+
+    holder.response_body.committedSyncCount = sql_result.objects[0].sync_count
+    return True
+
+
+def test(holder):
     """Test request handler."""
 
     log.debug('test()')
 
-    auth_user = get_authenticated_user(request, response, holder)
-    if not auth_user:
+    if not set_auth_user(holder):
         return
 
     log.debug('response = success')
-    response.set_data(APIErrorResponse.SUCCESS)
+    holder.response.set_data(APIErrorResponse.SUCCESS)
 
 
-def base_data_down(request, response, holder):
+def base_data_down(holder):
     """Base Data Download request handler."""
 
     log.debug('base_data_down()')
 
-    # Auth Check Not Required #
+    # Auth User Not Required #
 
-    request_body = get_request_body(request,
-                                    response,
-                                    BaseDataDownRequestBody)
-    if not request_body:
+    if not set_request_body(BaseDataDownRequestBody, holder):
         return
 
-    objects = []
+    if not set_object_class(holder):
+        return
 
-    pack_response(response, APIErrorCode.SUCCESS, objects)
+    holder.response_body = ResponseBody()
+    holder.response_body.objects = []
+
+    pack_response(holder)
 
 
-def sync_down(request, response, holder):
+def sync_down(holder):
     """Sync Download request handler."""
 
     log.debug('sync_down()')
 
-    auth_user = get_authenticated_user(request, response, holder)
-    if not auth_user:
+    if not set_auth_user(holder):
         return
 
-    request_body = get_request_body(request,
-                                    response,
-                                    SyncDownRequestBody)
-    if not request_body:
+    if not set_request_body(SyncDownRequestBody, holder):
         return
 
-    objects = []
+    if not set_auth_client(holder):
+        return
 
-    pack_response(response, APIErrorCode.SUCCESS, objects)
+    if not set_object_class(holder):
+        return
+
+    holder.response_body = ResponseBody()
+    holder.response_body.objects = []
+
+    pack_response(holder)
 
 
-def sync_up(request, response, holder):
+def sync_up(holder):
     """Sync Upload request handler."""
 
     log.debug('sync_up()')
 
-    auth_user = get_authenticated_user(request, response, holder)
-    if not auth_user:
+    if not set_auth_user(holder):
         return
 
-    request_body = get_request_body(request,
-                                    response,
-                                    SyncUpRequestBody)
-    if not request_body:
+    if not set_request_body(SyncUpRequestBody, holder):
         return
 
-    objects = []
+    if not set_auth_client(holder):
+        return
 
-    pack_response(response, APIErrorCode.SUCCESS, objects)
+    if not set_object_class(holder):
+        return
+
+    if not mark_expired_sessions_committed(holder):
+        return
+
+    if not set_session_sc(holder):
+        return
+
+    holder.response_body = ResponseBody()
+    holder.response_body.objects = []
+
+    if not mark_session_committed(holder):
+        return
+
+    if not set_committed_sc(holder):
+        return
+
+    pack_response(holder)
 
 
-def account_open(request, response, holder):
+def account_open(holder):
     """Account Open request handler."""
 
     log.debug('account_open()')
 
+    req_args = holder.request.args
+
     new_user = User()
-    new_user.email = request.args.get('email')
-    new_user.password = request.args.get('password')
+    new_user.email = req_args.get('email')
+    new_user.password = req_args.get('password')
 
     try:
         new_user.validate()
@@ -522,28 +745,32 @@ def account_open(request, response, holder):
         log.debug('new_user validation error = %s' % e)
         if 'password' in e.messages:
             log.debug('response = invalid password')
-            response.set_data(APIErrorResponse.INVALID_PASSWORD)
+            holder.response.set_data(APIErrorResponse.INVALID_PASSWORD)
             return
         elif 'email' in e.messages:
             log.debug('response = invalid email')
-            response.set_data(APIErrorResponse.INVALID_EMAIL)
+            holder.response.set_data(APIErrorResponse.INVALID_EMAIL)
             return
         else:
             log.debug('response = internal server error')
-            response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+            holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
             return
 
     # Hash password before database insertion.
     new_user.password = password_context(holder).encrypt(new_user.password)
 
-    request_body = get_request_body(request,
-                                    response,
-                                    AccountOpenRequestBody)
-    if not request_body:
+    if not set_request_body(AccountOpenRequestBody, holder):
         return
 
     new_client = Client()
-    new_client.UUID = request_body.clientUUID
+    new_client.UUID = holder.request_body.clientUUID
+
+    try:
+        new_client.validate()
+    except ValidationError as e:
+        log.debug('new_client validation error = %s' % e)
+        log.debug('response = malformed request')
+        holder.response.set_data(APIErrorResponse.MALFORMED_REQUEST)
 
     sql_result = execute_statements(
         statements=(User.INSERT,
@@ -555,59 +782,52 @@ def account_open(request, response, holder):
         is_select=False)
 
     error_response = handle_user_sql_result_error(sql_result)
-
     if error_response:
-        response.set_data(error_response)
+        holder.response.set_data(error_response)
         return
 
     log.debug('response = success')
-    response.set_data(APIErrorResponse.SUCCESS)
+    holder.response.set_data(APIErrorResponse.SUCCESS)
 
 
-def account_close(request, response, holder):
+def account_close(holder):
     """Account Close request handler."""
 
     log.debug('account_close()')
 
-    auth_user = get_authenticated_user(request, response, holder)
-    if not auth_user:
+    if not set_auth_user(holder):
         return
 
     sql_result = execute_statement(
         statement=User.DELETE,
-        params=auth_user.delete_params(),
+        params=holder.auth_user.delete_params(),
         object_class=User,
         holder=holder,
         is_select=False)
 
     error_response = handle_user_sql_result_error(sql_result)
-
     if error_response:
-        response.set_data(error_response)
+        holder.response.set_data(error_response)
         return
 
     log.debug('response = success')
-    response.set_data(APIErrorResponse.SUCCESS)
+    holder.response.set_data(APIErrorResponse.SUCCESS)
 
 
-def account_modify(request, response, holder):
+def account_modify(holder):
     """Account Modify request handler."""
 
     log.debug('account_modify()')
 
-    auth_user = get_authenticated_user(request, response, holder)
-    if not auth_user:
+    if not set_auth_user(holder):
         return
 
-    request_body = get_request_body(request,
-                                    response,
-                                    AccountModifyRequestBody)
-    if not request_body:
+    if not set_request_body(AccountModifyRequestBody, holder):
         return
 
     mod_user = User()
-    mod_user.email = request_body.email
-    mod_user.password = request_body.password
+    mod_user.email = holder.request_body.email
+    mod_user.password = holder.request_body.password
 
     try:
         mod_user.validate()
@@ -615,15 +835,15 @@ def account_modify(request, response, holder):
         log.debug('mod_user validation error = %s' % e)
         if 'password' in e.messages:
             log.debug('response = invalid password')
-            response.set_data(APIErrorResponse.INVALID_PASSWORD)
+            holder.response.set_data(APIErrorResponse.INVALID_PASSWORD)
             return
         elif 'email' in e.messages:
             log.debug('response = invalid email')
-            response.set_data(APIErrorResponse.INVALID_EMAIL)
+            holder.response.set_data(APIErrorResponse.INVALID_EMAIL)
             return
         else:
             log.debug('response = internal server error')
-            response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
+            holder.response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
             return
 
     # Hash password before database insertion.
@@ -634,49 +854,48 @@ def account_modify(request, response, holder):
 
     sql_result = execute_statement(
         statement=User.UPDATE_BY_EMAIL,
-        params=mod_user.update_by_email_params(auth_user.email),
-        object_class=User,
+        params=mod_user.update_by_email_params(holder.auth_user.email),
+        holder=holder,
         is_select=False)
 
     error_response = handle_user_sql_result_error(sql_result)
-
     if error_response:
-        response.set_data(error_response)
+        holder.response.set_data(error_response)
         return
 
     log.debug('response = success')
-    response.set_data(APIErrorResponse.SUCCESS)
+    holder.response.set_data(APIErrorResponse.SUCCESS)
 
 
-def route_request(request, response, holder):
+def route_request(holder):
     """Route request by type."""
 
-    t = request.args.get('type')
+    t = holder.request.args.get('type')
 
     if t is None:
         log.debug('request type is None')
         log.debug('response = malformed request')
-        response.set_data(APIErrorResponse.MALFORMED_REQUEST)
+        holder.response.set_data(APIErrorResponse.MALFORMED_REQUEST)
         return
 
     if t == APIRequestType.TEST:
-        test(request, response, holder)
+        test(holder)
     elif t == APIRequestType.BASE_DATA_DOWN:
-        base_data_down(request, response, holder)
+        base_data_down(holder)
     elif t == APIRequestType.SYNC_DOWN:
-        sync_down(request, response, holder)
+        sync_down(holder)
     elif t == APIRequestType.SYNC_UP:
-        sync_up(request, response, holder)
+        sync_up(holder)
     elif t == APIRequestType.ACCOUNT_OPEN:
-        account_open(request, response, holder)
+        account_open(holder)
     elif t == APIRequestType.ACCOUNT_CLOSE:
-        account_close(request, response, holder)
+        account_close(holder)
     elif t == APIRequestType.ACCOUNT_MODIFY:
-        account_modify(request, response, holder)
+        account_modify(holder)
     else:
         log.debug('request type match not found')
         log.debug('response = malformed request')
-        response.set_data(APIErrorResponse.MALFORMED_REQUEST)
+        holder.response.set_data(APIErrorResponse.MALFORMED_REQUEST)
 
 
 @Request.application
@@ -701,6 +920,8 @@ def application(request):
         return response
 
     holder = Holder()
+    holder.request = request
+    holder.response = response
 
     holder.cursor, holder.cnx, errno = open_db()
     if errno:
@@ -708,7 +929,7 @@ def application(request):
         response.set_data(APIErrorResponse.INTERNAL_SERVER_ERROR)
         return response
 
-    route_request(request, response, holder)
+    route_request(holder)
     close_db(holder.cursor, holder.cnx)
     return response
 
