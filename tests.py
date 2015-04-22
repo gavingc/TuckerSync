@@ -55,14 +55,17 @@ class TestCommon(object):
 class TestServerUnit(object):
     """Server unit tests."""
 
-    @pytest.fixture
+    @pytest.yield_fixture
     def holder(self):
         holder = server.Holder()
         holder.response = server.Response()
         holder.cursor, holder.cnx, errno = server.open_db()
         assert not errno
         holder.object_class = app_model.Product
-        return holder
+        yield holder
+
+        # finalization
+        server.close_db(holder.cursor, holder.cnx)
 
     def test_warn_expired_sessions_committed(self, holder, caplog):
         """Test logged warning when expired sessions are committed."""
@@ -72,15 +75,17 @@ class TestServerUnit(object):
 
         server.mark_expired_sessions_committed(holder)
 
-        logged_msg = (SyncCount.WARN_EXPIRED_SESSIONS_COMMITTED % 4) + '\n'
+        logged_msg = SyncCount.WARN_EXPIRED_SESSIONS_COMMITTED % 4
 
         assert logged_msg in caplog.text()
 
+        count = 0
         for record in caplog.records():
-            if record.msg == logged_msg:
-                assert record.levelname == 'WARNING'
+            if record.getMessage() == logged_msg:
+                assert 'WARNING' == record.levelname
+                count += 1
 
-        server.close_db(holder.cursor, holder.cnx)
+        assert 1 == count
 
 
 class TestServer(object):
