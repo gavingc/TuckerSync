@@ -7,5 +7,6 @@
     <file url="file://$PROJECT_DIR$/base_create.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/base_drop.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/common.py" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/test_sync_count.py" dialect="MySQL" />
   </component>
 </project>
