@@ -63,7 +63,7 @@ from app_config import APP_KEYS
 fixture = pytest.fixture
 parametrize = pytest.mark.parametrize
 use_fixtures = pytest.mark.usefixtures
-yield_fixture = pytest.mark.yield_fixture
+yield_fixture = pytest.yield_fixture
 
 
 class TestCommon(object):
