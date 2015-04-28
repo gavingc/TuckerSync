@@ -7,6 +7,8 @@ and database state. By exercising the actual SQL statements, sequences and
 functions.
 
 This module is not intended to be run often or test the server function.
+Tests do not require a running server.
+However login access to the configured database is required (read local).
 
 New database connections are used for clean results between functions.
 In some cases `cursor.execute('COMMIT')` is used on purpose instead of
@@ -16,6 +18,12 @@ Also in the version of Connector/Python explored cnx.commit() simply executes
 
 Where sessions a and b are run in new processes.
 This allows genuine parallel execution of the session code in Python.
+
+WARNING:
+    DATA LOSS!
+    Do not run tests against a production database with live data.
+    All database tables will be dropped and then created after tests.
+    Leaving the database ready for production with fresh tables.
 
 Usage:
     This module uses the tests.py main function and accepts the same arguments.
@@ -32,14 +40,16 @@ Copyright:
     Copyright (c) 2014 Steven Tucker and Gavin Kromhout.
 """
 
+import pytest
 from time import sleep, time
 from uuid import uuid4
 
 from tests import main
 from server import open_db, close_db
-from app_setup import drop_create_tables
 from common import SyncCount
 from app_model import Setting, Product
+
+use_fixtures = pytest.mark.usefixtures
 
 
 def new_client_id():
@@ -213,23 +223,23 @@ def session_sequence_x(object_class):
 #################################
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_no_rows():
     """Test getting the committed sync count.
 
     No rows and fresh tables."""
 
-    drop_create_tables()
-
     committed_sc = get_committed_sc_x(Product)
     assert 0 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_0():
     """Test getting the committed sync count.
 
     Single uncommitted session."""
-
-    drop_create_tables()
 
     # Insert Single Row with Session Marked Uncommitted #
     cursor, cnx, errno = open_db()
@@ -250,12 +260,12 @@ def test_get_committed_sc_0():
     assert 0 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_1():
     """Test getting the committed sync count.
 
     Single committed session."""
-
-    drop_create_tables()
 
     # Insert Single Row with Session Marked Committed #
     cursor, cnx, errno = open_db()
@@ -276,12 +286,12 @@ def test_get_committed_sc_1():
     assert 1 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_0_1():
     """Test getting the committed sync count.
 
     Uncommitted and following committed session."""
-
-    drop_create_tables()
 
     # Insert Uncommitted and Following Committed Session Rows #
     cursor, cnx, errno = open_db()
@@ -302,12 +312,12 @@ def test_get_committed_sc_0_1():
     assert 0 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_1_0():
     """Test getting the committed sync count.
 
     Committed and following uncommitted session."""
-
-    drop_create_tables()
 
     # Insert Committed and Following Uncommitted Session Rows #
     cursor, cnx, errno = open_db()
@@ -328,12 +338,12 @@ def test_get_committed_sc_1_0():
     assert 1 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_1_1():
     """Test getting the committed sync count.
 
     Committed and following committed session."""
-
-    drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
     cursor, cnx, errno = open_db()
@@ -354,12 +364,12 @@ def test_get_committed_sc_1_1():
     assert 2 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_1101100():
     """Test getting the committed sync count.
 
     Complex committed and uncommitted sessions."""
-
-    drop_create_tables()
 
     # Insert Committed and UnCommitted Session Rows #
     cursor, cnx, errno = open_db()
@@ -387,12 +397,12 @@ def test_get_committed_sc_1101100():
     assert 2 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_0010011():
     """Test getting the committed sync count.
 
     Complex committed and uncommitted sessions."""
-
-    drop_create_tables()
 
     # Insert Committed and UnCommitted Session Rows #
     cursor, cnx, errno = open_db()
@@ -420,10 +430,10 @@ def test_get_committed_sc_0010011():
     assert 0 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_mixed_object_class_1100():
     """Test getting the committed sync count with mixed object classes."""
-
-    drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
     cursor, cnx, errno = open_db()
@@ -450,10 +460,10 @@ def test_get_committed_sc_mixed_object_class_1100():
     assert 2 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_mixed_object_class_0011():
     """Test getting the committed sync count with mixed object classes."""
-
-    drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
     cursor, cnx, errno = open_db()
@@ -480,10 +490,10 @@ def test_get_committed_sc_mixed_object_class_0011():
     assert 1 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_mixed_object_class_1010():
     """Test getting the committed sync count with mixed object classes."""
-
-    drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
     cursor, cnx, errno = open_db()
@@ -510,10 +520,10 @@ def test_get_committed_sc_mixed_object_class_1010():
     assert 1 == committed_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_committed_sc_mixed_object_class_1110():
     """Test getting the committed sync count with mixed object classes."""
-
-    drop_create_tables()
 
     # Insert Committed and Following Committed Session Rows #
     cursor, cnx, errno = open_db()
@@ -545,6 +555,8 @@ def test_get_committed_sc_mixed_object_class_1110():
 ###############################
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_session_sc_parallel_long_trailing_delete_insert_commit_false():
     """Test get session sync count in parallel.
 
@@ -580,6 +592,8 @@ def test_get_session_sc_parallel_long_trailing_delete_insert_commit_false():
     assert a_session_sc.sync_count not in b_sc_list
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_session_sc_parallel_long_trailing_delete_insert_commit_false2():
     """Test get session sync count in parallel.
 
@@ -615,6 +629,8 @@ def test_get_session_sc_parallel_long_trailing_delete_insert_commit_false2():
     assert a_session_sc.sync_count in b_sc_list
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_session_sc_parallel_long_trailing_delete_insert_commit_true():
     """Test get session sync count in parallel.
 
@@ -661,8 +677,6 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes,
     same rows as session a."""
 
     from multiprocessing import Process, Queue
-
-    drop_create_tables()
 
     # Pre-load Rows to Create a Long Trailing Delete #
     cursor, cnx, errno = open_db()
@@ -743,10 +757,10 @@ def t_get_session_sc_parallel_long_trailing_delete(obj_classes,
 ###############################
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_mark_session_committed():
     """Test marking session committed."""
-
-    drop_create_tables()
 
     # Insert a Range of Session Rows #
     cursor, cnx, errno = open_db()
@@ -838,10 +852,10 @@ def insert_expired_and_current_sessions():
     close_db(cursor, cnx)
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_mark_expired_sessions_committed():
     """Test marking of expired past and future sessions as committed."""
-
-    drop_create_tables()
 
     insert_expired_and_current_sessions()
 
@@ -878,10 +892,10 @@ def test_mark_expired_sessions_committed():
 ##################
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_session_sequence():
     """Test session sequence for a single object class."""
-
-    drop_create_tables()
 
     compare_sc = get_committed_sc_x(Product)
 
@@ -892,10 +906,10 @@ def test_session_sequence():
     assert committed_sc.sync_count == session_sc.sync_count
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_session_sequence_repeating():
     """Test session sequence for a single object class, repeating."""
-
-    drop_create_tables()
 
     def run():
         compare_sc = get_committed_sc_x(Product)
@@ -922,10 +936,10 @@ def test_session_sequence_repeating():
                      'isCommitted': 1}]
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_session_sequence_mixed_object_class():
     """Test session sequence for mixed object classes, repeating."""
-
-    drop_create_tables()
 
     for i in range(5):
         session_sequence_x(Product)
@@ -948,6 +962,8 @@ def test_session_sequence_mixed_object_class():
                      'isCommitted': 1}]
 
 
+@use_fixtures('before_test_drop_create_tables')
+@use_fixtures('session_fin_drop_create_tables')
 def test_get_session_sc_parallel_long_data_transaction():
     """Parallel Sessions with long running trailing delete.
 
@@ -955,7 +971,6 @@ def test_get_session_sc_parallel_long_data_transaction():
 
     from multiprocessing import Process, Queue
 
-    drop_create_tables()
     new_client_id()
 
     def run_session_a(q):

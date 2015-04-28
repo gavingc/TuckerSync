@@ -4,11 +4,29 @@
 
 Main test suite for the algorithm, server and client.
 
+WARNING:
+    DATA LOSS!
+    Do not run tests against a production database with live data.
+    All database tables will be dropped and then created after tests.
+    Leaving the database ready for production with fresh tables.
+
+Remote server:
+    Functional and integration tests are designed to execute against a running
+    local or remote server. Since there is no RPC (remote procedure call) to
+    drop-create all tables and an open connection to a remote database is not
+    expected this module cannot clean the database of a remote server.
+    - Use the --remote-server test option.
+    - On the remote server clean the database with `app_setup.py --only-tables`
+
+    Unit tests require direct access to the local modules and database
+    precluding their use in testing remote installations.
+
 Usage:
-    tests.py [-h] [--baseurl BASEURL] [-k K]
+    tests.py [-h] [--remote-server] [--baseurl BASEURL] [-k K]
 
 Optional arguments:
   -h, --help         show this help message and exit
+  --remote-server    use when running against a remote server
   --baseurl BASEURL  specify the server base url
   -k K               only run tests which match the given substring expression
 
@@ -42,6 +60,11 @@ from common import APIRequestType, HTTP, JSON, APIRequest, APIErrorResponse, \
     SyncUpRequestBody, SyncCount
 from app_config import APP_KEYS
 
+fixture = pytest.fixture
+parametrize = pytest.mark.parametrize
+use_fixtures = pytest.mark.usefixtures
+yield_fixture = pytest.mark.yield_fixture
+
 
 class TestCommon(object):
     """Common unit tests."""
@@ -52,10 +75,14 @@ class TestCommon(object):
         assert '{"error":2}' == APIErrorResponse.MALFORMED_REQUEST
 
 
+@use_fixtures('session_fin_drop_create_tables')
 class TestServerUnit(object):
-    """Server unit tests."""
+    """Server unit tests.
 
-    @pytest.yield_fixture
+    Running server not required for unit tests.
+    However connection to a running database is required."""
+
+    @yield_fixture
     def holder(self):
         holder = server.Holder()
         holder.response = server.Response()
@@ -67,6 +94,7 @@ class TestServerUnit(object):
         # finalization
         server.close_db(holder.cursor, holder.cnx)
 
+    @use_fixtures('before_test_drop_create_tables')
     def test_warn_expired_sessions_committed(self, holder, caplog):
         """Test logged warning when expired sessions are committed."""
 
@@ -88,19 +116,20 @@ class TestServerUnit(object):
         assert 1 == count
 
 
+@use_fixtures("session_fin_drop_create_tables")
 class TestServer(object):
     """Server functional tests.
 
     base_url is a test fixture defined in conftest.py
     """
 
-    @pytest.fixture(scope='class')
+    @fixture(scope='class')
     def account_open_request_body(self):
         rb = AccountOpenRequestBody()
         rb.clientUUID = uuid.uuid4()
         return rb
 
-    @pytest.fixture(scope='class')
+    @fixture(scope='class')
     def sync_down_request_body(self, account_open_request_body):
         rb = SyncDownRequestBody()
         rb.objectClass = 'Product'
@@ -108,7 +137,7 @@ class TestServer(object):
         rb.lastSync = 0
         return rb
 
-    @pytest.fixture(scope='class')
+    @fixture(scope='class')
     def sync_up_request_body(self, account_open_request_body):
         rb = SyncUpRequestBody()
         rb.objectClass = 'Product'
@@ -116,7 +145,7 @@ class TestServer(object):
         rb.objects = []
         return rb
 
-    @pytest.fixture
+    @fixture
     def req(self, base_url):
         req = APIRequest()
         req.base_url = base_url
@@ -133,7 +162,7 @@ class TestServer(object):
                            'OPTIONS', 'GET', 'HEAD', 'PUT',
                            'PATCH', 'DELETE', 'TRACE', 'CONNECT')
 
-    @pytest.mark.parametrize('method', METHODS_NOT_ALLOWED)
+    @parametrize('method', METHODS_NOT_ALLOWED)
     def test_method_not_allowed(self, req, method):
         """Test server base url for method not allowed responses."""
 
@@ -251,7 +280,7 @@ class TestServer(object):
                     'None', 'none', 'NONE',
                     'Null', 'null', 'NULL')
 
-    @pytest.mark.parametrize('key', INVALID_KEYS)
+    @parametrize('key', INVALID_KEYS)
     def test_invalid_key(self, req, key):
         """Test server 'test' function with an invalid key."""
 
@@ -335,7 +364,7 @@ class TestServer(object):
                             'None', 'none', 'NONE',
                             'Null', 'null', 'NULL')
 
-    @pytest.mark.parametrize('req_type', UNSUPPORTED_REQ_TYPE)
+    @parametrize('req_type', UNSUPPORTED_REQ_TYPE)
     def test_malformed_request_type_not_supported(self, req, req_type):
         """Test server when an unsupported request type is specified."""
 
@@ -363,20 +392,21 @@ class TestServer(object):
         assert APIErrorResponse.AUTH_FAIL == response.content
 
 
+@use_fixtures("session_fin_drop_create_tables")
 class TestClient(object):
     """Client unit tests."""
 
-    @pytest.fixture(scope="class")
+    @fixture(scope="class")
     def client_a(self, base_url):
         return client.Client(base_url, APP_KEYS[1],
                              'user@example.com', 'secret78901234')
 
-    @pytest.fixture(scope="class")
+    @fixture(scope="class")
     def client_b(self, base_url):
         return client.Client(base_url, APP_KEYS[0],
                              'user@example.com', 'secret78901234')
 
-    @pytest.fixture(scope="function")
+    @fixture(scope="function")
     def mock_response(self):
         return flexmock(status_code=200, content='{"error":0}')
 
@@ -406,7 +436,7 @@ class TestClient(object):
                    'Null', 'null', 'NULL',
                    '{"error":}', '{"objects":[]}')
 
-    @pytest.mark.parametrize('content', BAD_CONTENT)
+    @parametrize('content', BAD_CONTENT)
     def test_get_json_bad_content(self, client_a,
                                   mock_response, content):
         mock_response.content = content
@@ -414,17 +444,18 @@ class TestClient(object):
             client_a.get_json_object(mock_response)
 
 
+@use_fixtures("session_fin_drop_create_tables")
 class TestIntegration(object):
     """Test the API by exercising the client and server."""
 
-    @pytest.fixture(scope="class")
+    @fixture(scope="class")
     def client_a(self, base_url):
         return client.Client(base_url,
                              APP_KEYS[1],
                              str(uuid.uuid4()) + '@example.com',
                              'secret78901234')
 
-    @pytest.fixture(scope="class")
+    @fixture(scope="class")
     def client_b(self, base_url):
         return client.Client(base_url,
                              APP_KEYS[0],
@@ -590,15 +621,16 @@ class TestIntegration(object):
         assert False == result
 
 
+@use_fixtures("session_fin_drop_create_tables")
 class TestMultipleClientIntegration(object):
     """Test the API by exercising multiple clients and server."""
 
-    @pytest.fixture(scope="class")
+    @fixture(scope="class")
     def client_a(self, base_url):
         return client.Client(base_url, APP_KEYS[1],
                              'user@example.com', 'secret78901234')
 
-    @pytest.fixture(scope="class")
+    @fixture(scope="class")
     def client_b(self, base_url):
         return client.Client(base_url, APP_KEYS[0],
                              'user@example.com', 'secret78901234')
@@ -651,6 +683,8 @@ def get_cmd_args():
     """Get the command line arguments."""
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--remote-server", action='store_true',
+                        help="use when running against a remote server")
     parser.add_argument("--baseurl", help="specify the server base url")
     parser.add_argument("-k",
                         help="only run tests matching the given substring "
@@ -664,6 +698,9 @@ def get_pytest_args(file_name, cmd_args):
 
     # PyTest argument list: verbose, exit on first failure and caplog format.
     args = ['-vx', '--log-format=%(levelname)s:%(name)s:%(message)s']
+
+    if cmd_args.remote_server:
+        args.append('--remote-server')
 
     # Optional command line argument specifying the server base url.
     if cmd_args.baseurl:

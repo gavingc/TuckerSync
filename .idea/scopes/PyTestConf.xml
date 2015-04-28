@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="PyTestConf" pattern="file:conftest.py" />
+</component>
