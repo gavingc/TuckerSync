@@ -681,10 +681,10 @@ def sync_down(holder):
     if not set_request_body(SyncDownRequestBody, holder):
         return
 
-    if not set_auth_client(holder):
+    if not set_object_class(holder):
         return
 
-    if not set_object_class(holder):
+    if not set_auth_client(holder):
         return
 
     holder.response_body = ResponseBody()
