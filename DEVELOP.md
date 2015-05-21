@@ -6,7 +6,7 @@ For the setup of an application server see INSTALL.md.
 
 **Developers without Commit Access**
 
-Please fork and send a rebased pull request.
+Please fork and send a rebased merge/pull request.
 
 **Developers with Commit Access**
 
@@ -16,7 +16,13 @@ Git Rebase Workflow
 ===================
 
 Rebase workflow is simply taking a block of commits and replaying them on top of existing commits.  
-*Avoid spaghetti merge. Solve conflicts sooner. Look ma, no merge.*
+
+ - Avoid spaghetti merge. 
+ - Solve conflicts sooner.
+ - Banish `git pull' from thy vocabulary!
+ 
+Basic: work directly on master or local branches for small commits.  
+Advanced: remote tracking, environment and feature branches.
 
 Master
 ------
@@ -64,18 +70,20 @@ Fast-forward master:
 Remember
 --------
 
-Don't `git pull` (pull is fetch && merge).
+Don't `git pull` (remember that git pull is fetch && merge).
 
 Don't force-push to a remote.
 
 Don't amend commits that have been pushed.
 
 Don't make permalinks to non permanent branches.  
-Feature and fix branches aren't permanent.
+Feature and fix branches aren't permanent.  
+Feature and fix branches are 'to the left' of master.  
+Permanent branches are 'to the right' of master.
 
 Clean working copy state is less to think about when performing operations.  
 Use git stash and unstash.  
-Untracked files are usually not a problem.
+Untracked files are usually not a problem here.
 
 Remote Tracking Branch
 ----------------------
@@ -150,5 +158,9 @@ git lg -n10
 Release
 -------
 
-A continuously deployable master is not a goal of this project.
-Release candidates should be selected, tagged, tested and perhaps branched.
+A continuously deployable master is not a goal of this project.  
+Release candidates (rc) should be selected, tagged, and tested.  
+Release branches are only needed if commits after the release tag are required.  
+Release and environment branches are 'to the right' of master.  
+Possibly use a production environment branch as per GitLab flow:  
+https://gitlab.com/help/workflow/gitlab_flow.md  
