@@ -11,7 +11,7 @@ Sync logical data objects between client and server for backup, replication and 
 
 With the advent of multiple device per user mobile computing, synchronising data has become a very common operation. Put simply synchronisation is an expected feature of any application that works with data. While there still appears to be a dearth of complete, clearly explained patterns or sync algorithms in the open source world. This API hopes to provide a better starting point. Two way, three way and more way sync ;-)
 
-Complete with client and server implementation (Python and PHP).
+Complete with client and server implementation.
 
 [Tucker Sync API is very much a work in progress, we hope to have a version 1.0 release in due course.]
 
