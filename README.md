@@ -355,24 +355,26 @@ To restore a failed server from backup:
 [Not implemented in this version]  
 Include API version, clientAppName, clientAppVersion in each call. Allows at least refusing to serve very old clients or reverting to a previous API compatibility mode.
 
-Logical Objects
----------------
+Object Classes
+--------------
 
-To use this API logical data objects must be defined for your application.  
-These may be defined in the application spec template.  
+To use TuckerSync object classes must be defined for your application.  
+Object classes should define logical data objects and be mostly self contained.  
+Object classes are defined in the application model file (app_model).
 
-For example you may have a logging application, where a logEntry has a date value and a list of measurements.
+For example you may have an application, where a logEntry has a date and a list of measurements.
 
-Requiring two data objects:
+Requiring two object classes:
 
-    LogEntry {
-        String date
-        List<Measurement> measurementList
-    }
+    class LogEntry(Model):
+        date = StringType()
 
-    Measurement {
-        int value
-    }
+    class Measurement(Model):
+        logEntryId = LongType()
+        value = StringType()
+
+Referential integrity may be defined in the app_create.sql file but is not 
+otherwise managed by the server.
 
 Rewrite Rule
 ------------
