@@ -291,6 +291,7 @@ last_sync - long (64bit) sync counter, set to server supplied committedSyncCount
 
 Required on each object class to be synced:
 
+id - client object id. 
 last_sync - long value, 0 if not synced yet, determined by server and then recorded locally by client.  
 local_changes - boolean value, set by client when there are local changes yet to be synced.  
 server_object_id - long value, 0 if not synced yet, replaced with the server’s id for this object once synced.  
