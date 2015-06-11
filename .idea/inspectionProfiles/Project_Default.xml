@@ -19,6 +19,7 @@
       </option>
     </inspection_tool>
     <inspection_tool class="PyShadowingNamesInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <scope name="PyTest" level="WEAK WARNING" enabled="false" />
       <scope name="PyTestConf" level="WEAK WARNING" enabled="false" />
     </inspection_tool>
     <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
